@@ -39,7 +39,8 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 		}
 	}
 	defer os.RemoveAll(dir) //nolint:errcheck
-	if err := config.WriteYamlConfig(dir); err != nil {
+	configFile := "config.yaml"
+	if err := config.WriteYamlConfig(dir, configFile); err != nil {
 		return err
 	}
 
@@ -50,7 +51,7 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 	pupsArgs := "--skip-tags=precompile,migrate,db"
 	builder := docker.DockerBuilder{
 		Config:    config,
-		Stdin:     strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv)),
+		Stdin:     strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv, configFile)),
 		Dir:       dir,
 		Namespace: namespace,
 		ImageTag:  r.Tag,
