@@ -58,7 +58,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    needs: [lint, test, create_release]
+    needs: [lint, test, create_github_release]
     strategy:
       matrix:
         goos: [linux, darwin]
