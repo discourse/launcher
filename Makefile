@@ -12,4 +12,4 @@ test:
 .PHONY: release
 release:
 	export VERSION=$(shell cd v2; go run ./... --version) &&\
-	git tag $$VERSION && git push refs/tags/$$VERSION
+	git tag $$VERSION && git push origin refs/tags/$$VERSION
