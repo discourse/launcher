@@ -34,7 +34,7 @@ type Cli struct {
 	RestartCmd RestartCmd `cmd:"" name:"restart" help:"Stops then starts container."`
 	RebuildCmd RebuildCmd `cmd:"" name:"rebuild" help:"Builds new image, then destroys old container, and starts new container."`
 
-	InstallCompletions kongplete.InstallCompletions `cmd:"" aliases:"sh" help:"Print shell autocompletions. Add output to dotfiles, or 'source <(./launcher2 sh)'."`
+	InstallCompletions kongplete.InstallCompletions `cmd:"" aliases:"sh" help:"Print shell autocompletions. Add output to dotfiles, or 'source <(./launcher sh)'."`
 }
 
 func main() {
