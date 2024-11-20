@@ -75,6 +75,7 @@ jobs:
         working-directory: ./v2
         env:
           GH_TOKEN: ${{ github.token }}
+          CGO_ENABLED: 0
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           BIN_FILE: launcher
