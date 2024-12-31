@@ -123,11 +123,13 @@ Autocompletes commands, subcommands, and suggests `app` config files from your c
 
 ## Maintainability
 
-Golang is well suited as a drop in replacement as just like a shellscript, the deployed binary can still carry minimal assumptions about a particular platform to run. (IE, no dependency on ruby, python, etc)
+Launcher had outgrown being a simple wrapper script around Docker, so we rewrote it in Go.
 
-Golang allows us to use a fully fleshed out programming language to run native yaml parsing: Calling out to ruby through a docker container worked well enough, but got complicated shuffling results through stdout into shell variables.
+Go is well suited as a drop in replacement as just like a shellscript, the deployed binary can still carry minimal assumptions about a particular platform to run (e.g. no dependencies on ruby, python, etc).
 
-Launcher has outgrown being a simple wrapper script around Docker. Golang has good support for tests and breaking up code into separate modules to better support further growth around additional subcommands we may wish to add.
+Go allows us to use a fully fleshed out programming language to run native yaml parsing: Calling out to ruby through a docker container worked well enough, but got complicated shuffling results through stdout into shell variables.
+
+Go has good support for tests and breaking up code into separate modules to better support further growth around additional subcommands we may wish to add.
 
 ## Roadmap
 
