@@ -10,7 +10,7 @@ import (
 const Version = "v2.0.3"
 
 const DefaultNamespace = "local_discourse"
-const DefaultBaseImage = "discourse/base:2.0.20250226-0128"
+const DefaultBaseImage = "discourse/base:release"
 
 // Known secrets, or otherwise not public info from config so we can build public images
 var KnownSecrets = []string{
