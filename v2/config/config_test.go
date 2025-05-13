@@ -58,4 +58,9 @@ var _ = Describe("Config", func() {
 			Expect(config.DockerHostname("asdf!@#")).To(Equal("asdf---"))
 		})
 	})
+	It("should error if no base config LoadConfig to load yaml configuration", func() {
+		_, err := config.LoadConfig("../test/containers", "test-no-base-image", true, "../test")
+		Expect(err).ToNot(BeNil())
+		Expect(err.Error()).To(Equal("No base image specified in config! Set base image with `base_image: {imagename}`"))
+	})
 })

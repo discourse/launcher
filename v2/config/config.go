@@ -67,7 +67,6 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	config := &Config{
 		Name:         configName,
 		Boot_Command: defaultBootCommand,
-		Base_Image:   utils.DefaultBaseImage,
 	}
 
 	matched, _ := regexp.MatchString("[[:upper:]/ !@#$%^&*()+~`=]", configName)
@@ -120,6 +119,10 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	for k, v := range config.Env {
 		val := strings.ReplaceAll(v, "{{config}}", config.Name)
 		config.Env[k] = val
+	}
+
+	if config.Base_Image == "" {
+		return nil, errors.New("No base image specified in config! Set base image with `base_image: {imagename}`")
 	}
 
 	return config, nil
