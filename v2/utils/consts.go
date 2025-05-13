@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const Version = "v2.0.3"
+const Version = "v2.0.4"
 
 const DefaultNamespace = "local_discourse"
 const DefaultBaseImage = "discourse/base:release"
