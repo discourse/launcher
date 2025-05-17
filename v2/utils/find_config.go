@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"flag"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -28,12 +27,12 @@ func FindConfigNames() []string {
 	//squelch helptext
 	flags.SetOutput(&bytes.Buffer{})
 	confDirArg := flags.String("conf-dir", "./containers", "conf dir")
-	flags.Parse(flagLine)
+	flags.Parse(flagLine) //nolint:errcheck
 
 	// search in the current conf dir for any files
 	confDir := strings.TrimRight(*confDirArg, "/") + "/"
 	confFiles := []string{}
-	files, err := ioutil.ReadDir(confDir)
+	files, err := os.ReadDir(confDir)
 	if err == nil {
 		for _, file := range files {
 			if !file.IsDir() {

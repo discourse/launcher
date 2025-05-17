@@ -46,14 +46,14 @@ func (r *StartCmd) Run(cli *Cli, ctx *context.Context) error {
 	running, _ := docker.ContainerRunning(r.Config)
 
 	if running && !r.DryRun {
-		fmt.Fprintln(utils.Out, "Nothing to do, your container has already started!")
+		fmt.Fprintln(utils.Out, "Nothing to do, your container has already started!") //nolint:errcheck
 		return nil
 	}
 
 	exists, _ := docker.ContainerExists(r.Config)
 
 	if exists && !r.DryRun {
-		fmt.Fprintln(utils.Out, "starting up existing container")
+		fmt.Fprintln(utils.Out, "starting up existing container") //nolint:errcheck
 		cmd := exec.CommandContext(*ctx, utils.DockerPath, "start", r.Config)
 
 		if r.Supervised {
@@ -63,7 +63,9 @@ func (r *StartCmd) Run(cli *Cli, ctx *context.Context) error {
 				if runtime.GOOS == "darwin" {
 					runCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					stopCmd := exec.CommandContext(runCtx, utils.DockerPath, "stop", r.Config)
-					utils.CmdRunner(stopCmd).Run()
+					if err := utils.CmdRunner(stopCmd).Run(); err != nil {
+						fmt.Fprintln(utils.Out, "Error stopping container"+r.Config) //nolint:errcheck
+					}
 					cancel()
 				}
 				return unix.Kill(-cmd.Process.Pid, unix.SIGINT)
@@ -75,7 +77,7 @@ func (r *StartCmd) Run(cli *Cli, ctx *context.Context) error {
 			cmd.Stderr = os.Stderr
 		}
 
-		fmt.Fprintln(utils.Out, cmd)
+		fmt.Fprintln(utils.Out, cmd) //nolint:errcheck
 
 		if err := utils.CmdRunner(cmd).Run(); err != nil {
 			return err
@@ -87,12 +89,12 @@ func (r *StartCmd) Run(cli *Cli, ctx *context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files.")
+		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
 	}
 
 	defaultHostname, _ := os.Hostname()
 	defaultHostname = defaultHostname + "-" + r.Config
-	hostname := config.DockerHostname(defaultHostname)
+	hostname := config.GetDockerHostname(defaultHostname)
 
 	restart := true
 	detatch := true
@@ -103,7 +105,7 @@ func (r *StartCmd) Run(cli *Cli, ctx *context.Context) error {
 	}
 
 	extraFlags := strings.Fields(r.DockerArgs)
-	bootCmd := config.BootCommand()
+	bootCmd := config.GetBootCommand()
 
 	runner := docker.DockerRunner{
 		Config:      config,
@@ -119,7 +121,7 @@ func (r *StartCmd) Run(cli *Cli, ctx *context.Context) error {
 		Cmd:         []string{bootCmd},
 	}
 
-	fmt.Fprintln(utils.Out, "starting new container...")
+	fmt.Fprintln(utils.Out, "starting new container...") //nolint:errcheck
 	return runner.Run()
 }
 
@@ -133,7 +135,7 @@ type RunCmd struct {
 func (r *RunCmd) Run(cli *Cli, ctx *context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files.")
+		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
 	}
 	extraFlags := strings.Fields(r.DockerArgs)
 	runner := docker.DockerRunner{
@@ -146,7 +148,6 @@ func (r *RunCmd) Run(cli *Cli, ctx *context.Context) error {
 		ExtraFlags:  extraFlags,
 	}
 	return runner.Run()
-	return nil
 }
 
 type StopCmd struct {
@@ -156,12 +157,12 @@ type StopCmd struct {
 func (r *StopCmd) Run(cli *Cli, ctx *context.Context) error {
 	exists, _ := docker.ContainerExists(r.Config)
 	if !exists {
-		fmt.Fprintln(utils.Out, r.Config+" was not found")
+		fmt.Fprintln(utils.Out, r.Config+" was not found") //nolint:errcheck
 		return nil
 	}
 	cmd := exec.CommandContext(*ctx, utils.DockerPath, "stop", "--time", "600", r.Config)
 
-	fmt.Fprintln(utils.Out, cmd)
+	fmt.Fprintln(utils.Out, cmd) //nolint:errcheck
 	if err := utils.CmdRunner(cmd).Run(); err != nil {
 		return err
 	}
@@ -197,19 +198,19 @@ func (r *DestroyCmd) Run(cli *Cli, ctx *context.Context) error {
 	exists, _ := docker.ContainerExists(r.Config)
 
 	if !exists {
-		fmt.Fprintln(utils.Out, r.Config+" was not found")
+		fmt.Fprintln(utils.Out, r.Config+" was not found") //nolint:errcheck
 		return nil
 	}
 
 	cmd := exec.CommandContext(*ctx, utils.DockerPath, "stop", "--time", "600", r.Config)
-	fmt.Fprintln(utils.Out, cmd)
+	fmt.Fprintln(utils.Out, cmd) //nolint:errcheck
 
 	if err := utils.CmdRunner(cmd).Run(); err != nil {
 		return err
 	}
 
 	cmd = exec.CommandContext(*ctx, utils.DockerPath, "rm", r.Config)
-	fmt.Fprintln(utils.Out, cmd)
+	fmt.Fprintln(utils.Out, cmd) //nolint:errcheck
 
 	if err := utils.CmdRunner(cmd).Run(); err != nil {
 		return err
@@ -247,7 +248,7 @@ func (r *LogsCmd) Run(cli *Cli, ctx *context.Context) error {
 		return err
 	}
 
-	fmt.Fprintln(utils.Out, string(output[:]))
+	fmt.Fprintln(utils.Out, string(output[:])) //nolint:errcheck
 	return nil
 }
 
@@ -261,7 +262,7 @@ func (r *RebuildCmd) Run(cli *Cli, ctx *context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files.")
+		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
 	}
 
 	// if we're not in an all-in-one setup, we can run migrations while the app is running
@@ -356,14 +357,14 @@ func (r *CleanupCmd) Run(cli *Cli, ctx *context.Context) error {
 	_, err := os.Stat("/var/discourse/shared/standalone/postgres_data_old")
 
 	if !os.IsNotExist(err) {
-		fmt.Fprintln(utils.Out, "Old PostgreSQL backup data cluster detected")
-		fmt.Fprintln(utils.Out, "Would you like to remove it? (y/N)")
+		fmt.Fprintln(utils.Out, "Old PostgreSQL backup data cluster detected") //nolint:errcheck
+		fmt.Fprintln(utils.Out, "Would you like to remove it? (y/N)")          //nolint:errcheck
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		reply := scanner.Text()
 		if reply == "y" || reply == "Y" {
-			fmt.Fprintln(utils.Out, "removing old PostgreSQL data cluster at /var/discourse/shared/standalone/postgres_data_old...")
-			os.RemoveAll("/var/discourse/shared/standalone/postgres_data_old")
+			fmt.Fprintln(utils.Out, "removing old PostgreSQL data cluster at /var/discourse/shared/standalone/postgres_data_old...") //nolint:errcheck
+			os.RemoveAll("/var/discourse/shared/standalone/postgres_data_old")                                                       //nolint:errcheck
 		} else {
 			return errors.New("Cancelled")
 		}
