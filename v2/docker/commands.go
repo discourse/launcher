@@ -45,8 +45,10 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 		cmd.Args = append(cmd.Args, k)
 	}
 	cmd.Args = append(cmd.Args, "--no-cache")
-	cmd.Args = append(cmd.Args, "--pull")
+	//cmd.Args = append(cmd.Args, "--pull")
 	cmd.Args = append(cmd.Args, "--force-rm")
+	cmd.Args = append(cmd.Args, "--target")
+	cmd.Args = append(cmd.Args, "discourse")
 	cmd.Args = append(cmd.Args, "-t")
 	cmd.Args = append(cmd.Args, r.Namespace+"/"+r.Config.Name+":"+r.ImageTag)
 	cmd.Args = append(cmd.Args, "--shm-size=512m")

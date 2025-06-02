@@ -135,7 +135,18 @@ func (config *Config) Yaml() string {
 func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool) string {
 	builder := strings.Builder{}
 	builder.WriteString("ARG dockerfile_from_image=" + config.BaseImage + "\n")
-	builder.WriteString("FROM ${dockerfile_from_image}\n")
+	builder.WriteString("FROM ${dockerfile_from_image} AS discourse_base\n")
+	builder.WriteString("COPY config.yaml /temp-config.yaml\n")
+	builder.WriteString("RUN " +
+		"cat /temp-config.yaml | /usr/local/bin/pups --tags=prebuild --stdin " +
+		"&& rm /temp-config.yaml\n")
+	builder.WriteString("FROM discourse_base AS cli_builder\n")
+	builder.WriteString("COPY --from=test/discourse_pnpm_deps / /home/discourse/.local/share/pnpm/store\n")
+	builder.WriteString("COPY config.yaml /temp-config.yaml\n")
+	builder.WriteString("RUN " +
+		"cat /temp-config.yaml | /usr/local/bin/pups --tags=build --stdin " +
+		"&& rm /temp-config.yaml\n")
+	builder.WriteString("FROM discourse_base AS discourse\n")
 	builder.WriteString(config.dockerfileArgs() + "\n")
 	if bakeEnv {
 		builder.WriteString(config.dockerfileEnvs() + "\n")
@@ -143,6 +154,7 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool) string {
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY config.yaml /temp-config.yaml\n")
 	builder.WriteString("RUN " +
+		"--mount=type=cache,from=cli_builder,source=/var/www/discourse/app/assets/javascripts/discourse/dist,target=/discourse_dist " +
 		"cat /temp-config.yaml | /usr/local/bin/pups " + pupsArgs + " --stdin " +
 		"&& rm /temp-config.yaml\n")
 	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]")

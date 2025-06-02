@@ -47,7 +47,7 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 	if namespace == "" {
 		namespace = utils.DefaultNamespace
 	}
-	pupsArgs := "--skip-tags=precompile,migrate,db"
+	pupsArgs := "--skip-tags=prebuild,build,precompile,migrate,db"
 	builder := docker.DockerBuilder{
 		Config:    config,
 		Stdin:     strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv)),
