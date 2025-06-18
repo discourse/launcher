@@ -6,16 +6,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/Wing924/shellwords"
 	"github.com/discourse/launcher/v2/config"
 	"github.com/discourse/launcher/v2/utils"
-	"golang.org/x/sys/unix"
 )
 
 type DockerBuilder struct {
@@ -31,10 +28,7 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 		r.ImageTag = "latest"
 	}
 	cmd := exec.CommandContext(ctx, utils.DockerPath, "build")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error {
-		return unix.Kill(-cmd.Process.Pid, unix.SIGINT)
-	}
+	TimeoutDockerBuild(cmd)
 	cmd.Dir = r.Dir
 	cmd.Env = os.Environ()
 	env := r.Config.GetEnvSlice(false)
@@ -83,20 +77,7 @@ func (r *DockerRunner) Run(ctx context.Context) error {
 
 	// Detatch signifies we do not want to supervise
 	if !r.Detatch {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-		cmd.Cancel = func() error {
-			// MacOS cannot kill a process group using the negative pid.
-			// attempt to stop a container by running docker stop
-			if runtime.GOOS == "darwin" {
-				runCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				stopCmd := exec.CommandContext(runCtx, utils.DockerPath, "stop", r.ContainerId)
-				if err := utils.CmdRunner(stopCmd).Run(); err != nil {
-					fmt.Fprintln(utils.Out, "Error stopping container"+r.ContainerId) //nolint:errcheck
-				}
-				cancel()
-			}
-			return unix.Kill(-cmd.Process.Pid, unix.SIGINT)
-		}
+		TimeoutDockerContainer(cmd, r.ContainerId)
 	}
 
 	cmd.Env = os.Environ()

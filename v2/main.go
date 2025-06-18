@@ -7,10 +7,10 @@ import (
 	"github.com/discourse/launcher/v2/utils"
 	"github.com/posener/complete"
 	"github.com/willabides/kongplete"
-	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
 	"os/signal"
+	"syscall"
 )
 
 type Cli struct {
@@ -59,8 +59,8 @@ func main() {
 	defer cancel()
 	ctx.BindTo(runCtx, (*context.Context)(nil))
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, unix.SIGTERM)
-	signal.Notify(sigChan, unix.SIGINT)
+	signal.Notify(sigChan, syscall.SIGTERM)
+	signal.Notify(sigChan, syscall.SIGINT)
 	done := make(chan struct{})
 	defer close(done)
 	go func() {

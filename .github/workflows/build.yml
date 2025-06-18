@@ -74,7 +74,7 @@ jobs:
     needs: [fmt, lint, test, create_github_release]
     strategy:
       matrix:
-        goos: [linux, darwin]
+        goos: [linux, darwin, windows]
         goarch: ["386", amd64, arm64]
         exclude:
           - goarch: "386"
@@ -91,7 +91,7 @@ jobs:
           CGO_ENABLED: 0
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          BIN_FILE: launcher
+          BIN_FILE: "launcher${{ matrix.goos == 'windows' && '.exe' || '' }}"
           ZIP_FILE: launcher-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
         run: |
           go build -o bin/${BIN_FILE}

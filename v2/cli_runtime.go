@@ -7,16 +7,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
-	"syscall"
-	"time"
 
 	"github.com/discourse/launcher/v2/config"
 	"github.com/discourse/launcher/v2/docker"
 	"github.com/discourse/launcher/v2/utils"
-
-	"golang.org/x/sys/unix"
 )
 
 /*
@@ -57,22 +52,7 @@ func (r *StartCmd) Run(cli *Cli, ctx context.Context) error {
 		cmd := exec.CommandContext(ctx, utils.DockerPath, "start", r.Config)
 
 		if r.Supervised {
-			cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
-			cmd.Cancel = func() error {
-				// MacOS cannot kill a process group using the negative pid.
-				// attempt to stop a container by running docker stop
-				if runtime.GOOS == "darwin" {
-					runCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-					stopCmd := exec.CommandContext(runCtx, utils.DockerPath, "stop", r.Config)
-					if err := utils.CmdRunner(stopCmd).Run(); err != nil {
-						fmt.Fprintln(utils.Out, "Error stopping container"+r.Config) //nolint:errcheck
-					}
-					cancel()
-				}
-				return unix.Kill(-cmd.Process.Pid, unix.SIGINT)
-			}
-
+			docker.TimeoutDockerContainer(cmd, r.Config)
 			cmd.Args = append(cmd.Args, "--attach")
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
