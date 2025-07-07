@@ -109,8 +109,8 @@ func (r *StartCmd) Run(cli *Cli, ctx context.Context) error {
 type RunCmd struct {
 	RunImage   string   `name:"run-image" help:"Override the image used for running the container."`
 	DockerArgs string   `name:"docker-args" help:"Extra arguments to pass when running docker"`
-	Config     string   `arg:"" name:"config" help:"config" predictor:"config"`
-	Cmd        []string `arg:"" help:"command to run" passthrough:""`
+	Config     string   `arg:"" name:"config" help:"config" predictor:"config" passthrough:""`
+	Cmd        []string `arg:"" help:"command to run"`
 }
 
 func (r *RunCmd) Run(cli *Cli, ctx context.Context) error {

@@ -16,16 +16,17 @@ import (
 )
 
 type DockerBuilder struct {
-	Config    *config.Config
-	Stdin     io.Reader
-	Dir       string
-	Namespace string
-	ImageTag  string
+	Config     *config.Config
+	Stdin      io.Reader
+	Dir        string
+	Namespace  string
+	ImageTag   string
+	ExtraFlags []string
 }
 
 func (r *DockerBuilder) Run(ctx context.Context) error {
 	if r.ImageTag == "" {
-		r.ImageTag = "latest"
+		r.ImageTag = r.Namespace+"/"+r.Config.Name
 	}
 	cmd := exec.CommandContext(ctx, utils.DockerPath, "build")
 	TimeoutDockerBuild(cmd)
@@ -41,9 +42,10 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 	cmd.Args = append(cmd.Args, "--no-cache")
 	cmd.Args = append(cmd.Args, "--pull")
 	cmd.Args = append(cmd.Args, "--force-rm")
-	cmd.Args = append(cmd.Args, "-t")
-	cmd.Args = append(cmd.Args, r.Namespace+"/"+r.Config.Name+":"+r.ImageTag)
+	cmd.Args = append(cmd.Args, "--tag")
+	cmd.Args = append(cmd.Args, r.ImageTag)
 	cmd.Args = append(cmd.Args, "--shm-size=512m")
+	cmd.Args = append(cmd.Args, r.ExtraFlags...)
 	cmd.Args = append(cmd.Args, "-f")
 	cmd.Args = append(cmd.Args, "-")
 	cmd.Args = append(cmd.Args, ".")
