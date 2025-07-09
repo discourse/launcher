@@ -1,8 +1,9 @@
 package test_utils
 
 import (
-	"github.com/discourse/launcher/v2/utils"
 	"os/exec"
+
+	"github.com/discourse/launcher/v2/utils"
 )
 
 var RanCmds []exec.Cmd

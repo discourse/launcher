@@ -4,9 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/discourse/launcher/v2/config"
 	"os"
 	"strings"
+
+	"github.com/discourse/launcher/v2/config"
 )
 
 var _ = Describe("Config", func() {
@@ -17,7 +18,7 @@ var _ = Describe("Config", func() {
 		conf, _ = config.LoadConfig("../test/containers", "test", true, "../test")
 	})
 	AfterEach(func() {
-		os.RemoveAll(testDir)
+		os.RemoveAll(testDir) //nolint:errcheck
 	})
 	It("should be able to run LoadConfig to load yaml configuration", func() {
 		conf, err := config.LoadConfig("../test/containers", "test", true, "../test")
@@ -47,20 +48,20 @@ var _ = Describe("Config", func() {
 	Context("hostname tests", func() {
 		It("replaces hostname", func() {
 			config := config.Config{Env: map[string]string{"DOCKER_USE_HOSTNAME": "true", "DISCOURSE_HOSTNAME": "asdfASDF"}}
-			Expect(config.DockerHostname("")).To(Equal("asdfASDF"))
+			Expect(config.GetDockerHostname("")).To(Equal("asdfASDF"))
 		})
 		It("replaces hostname", func() {
 			config := config.Config{Env: map[string]string{"DOCKER_USE_HOSTNAME": "true", "DISCOURSE_HOSTNAME": "asdf!@#$%^&*()ASDF"}}
-			Expect(config.DockerHostname("")).To(Equal("asdf----------ASDF"))
+			Expect(config.GetDockerHostname("")).To(Equal("asdf----------ASDF"))
 		})
 		It("replaces a default hostnamehostname", func() {
 			config := config.Config{}
-			Expect(config.DockerHostname("asdf!@#")).To(Equal("asdf---"))
+			Expect(config.GetDockerHostname("asdf!@#")).To(Equal("asdf---"))
 		})
 	})
 	It("should error if no base config LoadConfig to load yaml configuration", func() {
 		_, err := config.LoadConfig("../test/containers", "test-no-base-image", true, "../test")
 		Expect(err).ToNot(BeNil())
-		Expect(err.Error()).To(Equal("No base image specified in config! Set base image with `base_image: {imagename}`"))
+		Expect(err.Error()).To(Equal("no base image specified in config! set base image with `base_image: {imagename}`"))
 	})
 })

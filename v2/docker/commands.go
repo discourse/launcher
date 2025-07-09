@@ -20,26 +20,27 @@ import (
 
 type DockerBuilder struct {
 	Config    *config.Config
-	Ctx       *context.Context
 	Stdin     io.Reader
 	Dir       string
 	Namespace string
 	ImageTag  string
 }
 
-func (r *DockerBuilder) Run() error {
+func (r *DockerBuilder) Run(ctx context.Context) error {
 	if r.ImageTag == "" {
 		r.ImageTag = "latest"
 	}
-	cmd := exec.CommandContext(*r.Ctx, utils.DockerPath, "build")
+	cmd := exec.CommandContext(ctx, utils.DockerPath, "build")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {
 		return unix.Kill(-cmd.Process.Pid, unix.SIGINT)
 	}
 	cmd.Dir = r.Dir
-	cmd.Env = r.Config.EnvArray(false)
+	cmd.Env = os.Environ()
+	env := r.Config.GetEnvSlice(false)
+	cmd.Env = append(cmd.Env, env...)
 	cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=plain")
-	for k, _ := range r.Config.Env {
+	for k := range r.Config.Env {
 		cmd.Args = append(cmd.Args, "--build-arg")
 		cmd.Args = append(cmd.Args, k)
 	}
@@ -63,7 +64,6 @@ func (r *DockerBuilder) Run() error {
 
 type DockerRunner struct {
 	Config      *config.Config
-	Ctx         *context.Context
 	ExtraEnv    []string
 	ExtraFlags  []string
 	Rm          bool
@@ -78,24 +78,30 @@ type DockerRunner struct {
 	Hostname    string
 }
 
-func (r *DockerRunner) Run() error {
-	cmd := exec.CommandContext(*r.Ctx, utils.DockerPath, "run")
+func (r *DockerRunner) Run(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, utils.DockerPath, "run")
 
 	// Detatch signifies we do not want to supervise
 	if !r.Detatch {
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 		cmd.Cancel = func() error {
+			// MacOS cannot kill a process group using the negative pid.
+			// attempt to stop a container by running docker stop
 			if runtime.GOOS == "darwin" {
 				runCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				stopCmd := exec.CommandContext(runCtx, utils.DockerPath, "stop", r.ContainerId)
-				utils.CmdRunner(stopCmd).Run()
+				if err := utils.CmdRunner(stopCmd).Run(); err != nil {
+					fmt.Fprintln(utils.Out, "Error stopping container"+r.ContainerId) //nolint:errcheck
+				}
 				cancel()
 			}
 			return unix.Kill(-cmd.Process.Pid, unix.SIGINT)
 		}
 	}
 
-	cmd.Env = r.Config.EnvArray(true)
+	cmd.Env = os.Environ()
+	env := r.Config.GetEnvSlice(true)
+	cmd.Env = append(cmd.Env, env...)
 	envKeys := make([]string, 0, len(r.Config.Env))
 
 	for envKey := range r.Config.Env {
@@ -173,13 +179,8 @@ func (r *DockerRunner) Run() error {
 	cmd.Args = append(cmd.Args, "--interactive")
 
 	// Docker args override settings above
-	for _, f := range r.Config.DockerArgs() {
-		cmd.Args = append(cmd.Args, f)
-	}
-
-	for _, f := range r.ExtraFlags {
-		cmd.Args = append(cmd.Args, f)
-	}
+	cmd.Args = append(cmd.Args, r.Config.GetDockerArgs()...)
+	cmd.Args = append(cmd.Args, r.ExtraFlags...)
 
 	if r.Hostname != "" {
 		cmd.Args = append(cmd.Args, "--hostname")
@@ -192,12 +193,10 @@ func (r *DockerRunner) Run() error {
 	if len(r.CustomImage) > 0 {
 		cmd.Args = append(cmd.Args, r.CustomImage)
 	} else {
-		cmd.Args = append(cmd.Args, r.Config.RunImage())
+		cmd.Args = append(cmd.Args, r.Config.GetRunImage())
 	}
 
-	for _, c := range r.Cmd {
-		cmd.Args = append(cmd.Args, c)
-	}
+	cmd.Args = append(cmd.Args, r.Cmd...)
 
 	if !r.Detatch {
 		cmd.Stdout = os.Stdout
@@ -223,11 +222,10 @@ type DockerPupsRunner struct {
 	FromImageName  string
 	SavedImageName string
 	ExtraEnv       []string
-	Ctx            *context.Context
 	ContainerId    string
 }
 
-func (r *DockerPupsRunner) Run() error {
+func (r *DockerPupsRunner) Run(ctx context.Context) error {
 	rm := false
 	// remove : in case docker tag is blank, and use default latest tag
 	r.SavedImageName = strings.TrimRight(r.SavedImageName, ":")
@@ -241,7 +239,9 @@ func (r *DockerPupsRunner) Run() error {
 			time.Sleep(utils.CommitWait)
 			runCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			cmd := exec.CommandContext(runCtx, utils.DockerPath, "rm", "--force", r.ContainerId)
-			utils.CmdRunner(cmd).Run()
+			if err := utils.CmdRunner(cmd).Run(); err != nil {
+				fmt.Fprintln(utils.Out, "Error stopping container"+r.ContainerId) //nolint:errcheck
+			}
 			cancel()
 		}
 	}(rm)
@@ -253,7 +253,6 @@ func (r *DockerPupsRunner) Run() error {
 	}
 
 	runner := DockerRunner{Config: r.Config,
-		Ctx:         r.Ctx,
 		ExtraEnv:    r.ExtraEnv,
 		Rm:          rm,
 		CustomImage: r.FromImageName,
@@ -263,19 +262,19 @@ func (r *DockerPupsRunner) Run() error {
 		SkipPorts:   true, //pups runs don't need to expose ports
 	}
 
-	if err := runner.Run(); err != nil {
+	if err := runner.Run(ctx); err != nil {
 		return err
 	}
 
 	if len(r.SavedImageName) > 0 {
 		time.Sleep(utils.CommitWait)
 
-		cmd := exec.Command("docker",
+		cmd := exec.Command(utils.DockerPath,
 			"commit",
 			"--change",
 			"LABEL org.opencontainers.image.created=\""+time.Now().UTC().Format(time.RFC3339)+"\"",
 			"--change",
-			"CMD [\""+r.Config.BootCommand()+"\"]",
+			"CMD [\""+r.Config.GetBootCommand()+"\"]",
 			r.ContainerId,
 			r.SavedImageName,
 		)
@@ -283,7 +282,7 @@ func (r *DockerPupsRunner) Run() error {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
-		fmt.Fprintln(utils.Out, cmd)
+		fmt.Fprintln(utils.Out, cmd) //nolint:errcheck
 
 		if err := utils.CmdRunner(cmd).Run(); err != nil {
 			return err

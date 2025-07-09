@@ -35,10 +35,6 @@ var _ = Describe("Runtime", func() {
 		utils.CmdRunner = CreateNewFakeCmdRunner()
 	})
 
-	AfterEach(func() {
-		os.RemoveAll(testDir)
-	})
-
 	Context("When running run commands", func() {
 		var checkStartCmd = func() {
 			Expect(len(RanCmds)).To(Equal(3))
@@ -82,13 +78,13 @@ var _ = Describe("Runtime", func() {
 		Context("without a running container", func() {
 			It("should run start commands", func() {
 				runner := ddocker.StartCmd{Config: "test"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 				checkStartCmd()
 			})
 
 			It("should not run stop commands", func() {
 				runner := ddocker.StopCmd{Config: "test"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 				checkStopCmdWhenMissing()
 			})
 		})
@@ -102,19 +98,19 @@ var _ = Describe("Runtime", func() {
 
 			It("should not run start commands", func() {
 				runner := ddocker.StartCmd{Config: "test"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 				checkStartCmdWhenStarted()
 			})
 
 			It("should run stop commands", func() {
 				runner := ddocker.StopCmd{Config: "test"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 				checkStopCmd()
 			})
 
 			It("should keep running during commits, and be post-deploy migration aware when using a web only container", func() {
 				runner := ddocker.RebuildCmd{Config: "web_only"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 
 				//initial build
 				cmd := GetLastCommand()
@@ -158,7 +154,7 @@ var _ = Describe("Runtime", func() {
 			It("should stop with standalone", func() {
 				runner := ddocker.RebuildCmd{Config: "standalone"}
 
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 
 				//initial build
 				cmd := GetLastCommand()
@@ -197,6 +193,10 @@ var _ = Describe("Runtime", func() {
 				cmd = GetLastCommand()
 				Expect(cmd.String()).To(ContainSubstring("docker ps --quiet"))
 				Expect(len(RanCmds)).To(Equal(0))
+
+				// Ensure we clean up the temp dir after building
+				_, err := os.Stat(testDir)
+				Expect(err).To(MatchError(os.IsNotExist, "IsNotExist"))
 			})
 		})
 

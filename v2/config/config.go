@@ -17,30 +17,30 @@ import (
 const defaultBootCommand = "/sbin/boot"
 
 type Config struct {
-	Name            string `yaml:-`
-	rawYaml         []string
-	Base_Image      string            `yaml:,omitempty`
-	Update_Pups     bool              `yaml:,omitempty`
-	Run_Image       string            `yaml:,omitempty`
-	Boot_Command    string            `yaml:,omitempty`
-	No_Boot_Command bool              `yaml:,omitempty`
-	Docker_Args     string            `yaml:,omitempty`
-	Templates       []string          `yaml:templates,omitempty`
-	Expose          []string          `yaml:expose,omitempty`
-	Env             map[string]string `yaml:env,omitempty`
-	Labels          map[string]string `yaml:labels,omitempty`
-	Volumes         []struct {
+	Name          string `yaml:"-"`
+	rawYaml       []string
+	BaseImage     string            `yaml:"base_image,omitempty"`
+	UpdatePups    bool              `yaml:"update_pups,omitempty"`
+	RunImage      string            `yaml:"run_image,omitempty"`
+	BootCommand   string            `yaml:"boot_command,omitempty"`
+	NoBootCommand bool              `yaml:"no_boot_command,omitempty"`
+	DockerArgs    string            `yaml:"docker_args,omitempty"`
+	Templates     []string          `yaml:"templates,omitempty"`
+	Expose        []string          `yaml:"expose,omitempty"`
+	Env           map[string]string `yaml:"env,omitempty"`
+	Labels        map[string]string `yaml:"labels,omitempty"`
+	Volumes       []struct {
 		Volume struct {
-			Host  string `yaml:host`
-			Guest string `yaml:guest`
-		} `yaml:volume`
-	} `yaml:volumes,omitempty`
+			Host  string `yaml:"host"`
+			Guest string `yaml:"guest"`
+		} `yaml:"volume"`
+	} `yaml:"volumes,omitempty"`
 	Links []struct {
 		Link struct {
-			Name  string `yaml:name`
-			Alias string `yaml:alias`
-		} `yaml:link`
-	} `yaml:links,omitempty`
+			Name  string `yaml:"name"`
+			Alias string `yaml:"alias"`
+		} `yaml:"link"`
+	} `yaml:"links,omitempty"`
 }
 
 func (config *Config) loadTemplate(templateDir string, template string) error {
@@ -65,8 +65,8 @@ func (config *Config) loadTemplate(templateDir string, template string) error {
 
 func LoadConfig(dir string, configName string, includeTemplates bool, templatesDir string) (*Config, error) {
 	config := &Config{
-		Name:         configName,
-		Boot_Command: defaultBootCommand,
+		Name:        configName,
+		BootCommand: defaultBootCommand,
 	}
 
 	matched, _ := regexp.MatchString("[[:upper:]/ !@#$%^&*()+~`=]", configName)
@@ -121,8 +121,8 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 		config.Env[k] = val
 	}
 
-	if config.Base_Image == "" {
-		return nil, errors.New("No base image specified in config! Set base image with `base_image: {imagename}`")
+	if config.BaseImage == "" {
+		return nil, errors.New("no base image specified in config! set base image with `base_image: {imagename}`")
 	}
 
 	return config, nil
@@ -134,7 +134,7 @@ func (config *Config) Yaml() string {
 
 func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool) string {
 	builder := strings.Builder{}
-	builder.WriteString("ARG dockerfile_from_image=" + config.Base_Image + "\n")
+	builder.WriteString("ARG dockerfile_from_image=" + config.BaseImage + "\n")
 	builder.WriteString("FROM ${dockerfile_from_image}\n")
 	builder.WriteString(config.dockerfileArgs() + "\n")
 	if bakeEnv {
@@ -145,7 +145,7 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool) string {
 	builder.WriteString("RUN " +
 		"cat /temp-config.yaml | /usr/local/bin/pups " + pupsArgs + " --stdin " +
 		"&& rm /temp-config.yaml\n")
-	builder.WriteString("CMD [\"" + config.BootCommand() + "\"]")
+	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]")
 	return builder.String()
 }
 
@@ -157,17 +157,17 @@ func (config *Config) WriteYamlConfig(dir string) error {
 	return nil
 }
 
-func (config *Config) BootCommand() string {
-	if len(config.Boot_Command) > 0 {
-		return config.Boot_Command
-	} else if config.No_Boot_Command {
+func (config *Config) GetBootCommand() string {
+	if len(config.BootCommand) > 0 {
+		return config.BootCommand
+	} else if config.NoBootCommand {
 		return ""
 	} else {
 		return defaultBootCommand
 	}
 }
 
-func (config *Config) EnvArray(includeKnownSecrets bool) []string {
+func (config *Config) GetEnvSlice(includeKnownSecrets bool) []string {
 	envs := []string{}
 	for k, v := range config.Env {
 		if !includeKnownSecrets && slices.Contains(utils.KnownSecrets, k) {
@@ -179,13 +179,13 @@ func (config *Config) EnvArray(includeKnownSecrets bool) []string {
 	return envs
 }
 
-func (config *Config) DockerArgs() []string {
-	return strings.Fields(config.Docker_Args)
+func (config *Config) GetDockerArgs() []string {
+	return strings.Fields(config.DockerArgs)
 }
 
 func (config *Config) dockerfileEnvs() string {
 	builder := []string{}
-	for k, _ := range config.Env {
+	for k := range config.Env {
 		builder = append(builder, "ENV "+k+"=${"+k+"}")
 	}
 	slices.Sort(builder)
@@ -194,7 +194,7 @@ func (config *Config) dockerfileEnvs() string {
 
 func (config *Config) dockerfileArgs() string {
 	builder := []string{}
-	for k, _ := range config.Env {
+	for k := range config.Env {
 		builder = append(builder, "ARG "+k)
 	}
 	slices.Sort(builder)
@@ -214,14 +214,14 @@ func (config *Config) dockerfileExpose() string {
 	return strings.Join(builder, "\n")
 }
 
-func (config *Config) RunImage() string {
-	if len(config.Run_Image) > 0 {
-		return config.Run_Image
+func (config *Config) GetRunImage() string {
+	if len(config.RunImage) > 0 {
+		return config.RunImage
 	}
 	return "local_discourse/" + config.Name
 }
 
-func (config *Config) DockerHostname(defaultHostname string) string {
+func (config *Config) GetDockerHostname(defaultHostname string) string {
 	_, exists := config.Env["DOCKER_USE_HOSTNAME"]
 	re := regexp.MustCompile(`[^a-zA-Z-]`)
 	hostname := defaultHostname

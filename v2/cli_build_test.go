@@ -39,25 +39,25 @@ var _ = Describe("Build", func() {
 		utils.CmdRunner = CreateNewFakeCmdRunner()
 	})
 
-	AfterEach(func() {
-		os.RemoveAll(testDir)
-	})
-
 	Context("When running build commands", func() {
 		var checkBuildCmd = func(cmd exec.Cmd) {
 			Expect(cmd.String()).To(ContainSubstring("docker build"))
 			Expect(cmd.String()).To(ContainSubstring("--build-arg DISCOURSE_DEVELOPER_EMAILS"))
-			Expect(cmd.Dir).To(Equal(testDir + "/test"))
+			Expect(cmd.Dir).To(Equal(testDir))
 
 			//db password is ignored
 			Expect(cmd.Env).ToNot(ContainElement("DISCOURSE_DB_PASSWORD=SOME_SECRET"))
 			Expect(cmd.Env).ToNot(ContainElement("DISCOURSEDB_SOCKET="))
 			buf := new(strings.Builder)
-			io.Copy(buf, cmd.Stdin)
+			io.Copy(buf, cmd.Stdin) //nolint:errcheck
 			// docker build's stdin is a dockerfile
 			Expect(buf.String()).To(ContainSubstring("COPY config.yaml /temp-config.yaml"))
 			Expect(buf.String()).To(ContainSubstring("--skip-tags=precompile,migrate,db"))
 			Expect(buf.String()).ToNot(ContainSubstring("SKIP_EMBER_CLI_COMPILE=1"))
+
+			// Ensure we clean up the temp dir after building
+			_, err := os.Stat(testDir)
+			Expect(err).To(MatchError(os.IsNotExist, "IsNotExist"))
 		}
 
 		var checkMigrateCmd = func(cmd exec.Cmd) {
@@ -68,7 +68,7 @@ var _ = Describe("Build", func() {
 			Expect(cmd.String()).To(ContainSubstring("--rm"))
 			Expect(cmd.Env).To(ContainElement("DISCOURSE_DB_PASSWORD=SOME_SECRET"))
 			buf := new(strings.Builder)
-			io.Copy(buf, cmd.Stdin)
+			io.Copy(buf, cmd.Stdin) //nolint:errcheck
 			// docker run's stdin is a pups config
 			Expect(buf.String()).To(ContainSubstring("path: /etc/service/nginx/run"))
 		}
@@ -109,7 +109,7 @@ var _ = Describe("Build", func() {
 					"local_discourse/test /bin/bash -c /usr/local/bin/pups --stdin --tags=db,precompile",
 			))
 
-			Expect(cmd.Env).To(Equal([]string{
+			Expect(cmd.Env).To(ContainElements(
 				"DISCOURSE_DB_HOST=data",
 				"DISCOURSE_DB_PASSWORD=SOME_SECRET",
 				"DISCOURSE_DB_PORT=",
@@ -131,10 +131,10 @@ var _ = Describe("Build", func() {
 				"RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=1.5",
 				"UNICORN_SIDEKIQS=1",
 				"UNICORN_WORKERS=3",
-			}))
+			))
 
 			buf := new(strings.Builder)
-			io.Copy(buf, cmd.Stdin)
+			io.Copy(buf, cmd.Stdin) //nolint:errcheck
 			// docker run's stdin is a pups config
 
 			// web.template.yml is merged with the test config
@@ -161,14 +161,14 @@ var _ = Describe("Build", func() {
 
 		It("Should run docker build with correct arguments", func() {
 			runner := ddocker.DockerBuildCmd{Config: "test"}
-			runner.Run(cli, &ctx)
+			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(1))
 			checkBuildCmd(RanCmds[0])
 		})
 
 		It("Should run docker migrate with correct arguments", func() {
 			runner := ddocker.DockerMigrateCmd{Config: "test"}
-			runner.Run(cli, &ctx)
+			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(1))
 			checkMigrateCmd(RanCmds[0])
 		})
@@ -180,7 +180,7 @@ var _ = Describe("Build", func() {
 
 			It("Should run docker build with correct namespace and custom flags", func() {
 				runner := ddocker.DockerBuildCmd{Config: "test", Tag: "testtag"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 				Expect(len(RanCmds)).To(Equal(1))
 				checkBuildCmd(RanCmds[0])
 				Expect(RanCmds[0].String()).To(ContainSubstring("testnamespace/test:testtag"))
@@ -188,7 +188,7 @@ var _ = Describe("Build", func() {
 
 			It("Should run docker configure with correct namespace and tags", func() {
 				runner := ddocker.DockerConfigureCmd{Config: "test", SourceTag: "build", TargetTag: "configure"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 				Expect(len(RanCmds)).To(Equal(3))
 
 				Expect(RanCmds[0].String()).To(MatchRegexp(
@@ -206,7 +206,7 @@ var _ = Describe("Build", func() {
 
 			It("Should run docker migrate with correct namespace", func() {
 				runner := ddocker.DockerMigrateCmd{Config: "test"}
-				runner.Run(cli, &ctx)
+				runner.Run(cli, ctx) //nolint:errcheck
 				Expect(len(RanCmds)).To(Equal(1))
 				Expect(RanCmds[0].String()).To(ContainSubstring("testnamespace/test "))
 			})
@@ -214,7 +214,7 @@ var _ = Describe("Build", func() {
 
 		It("Should allow skip post deployment migrations", func() {
 			runner := ddocker.DockerMigrateCmd{Config: "test", SkipPostDeploymentMigrations: true}
-			runner.Run(cli, &ctx)
+			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(1))
 			cmd := RanCmds[0]
 			Expect(cmd.String()).To(ContainSubstring("docker run"))
@@ -225,14 +225,14 @@ var _ = Describe("Build", func() {
 			Expect(cmd.String()).To(ContainSubstring("--rm"))
 			Expect(cmd.Env).To(ContainElement("DISCOURSE_DB_PASSWORD=SOME_SECRET"))
 			buf := new(strings.Builder)
-			io.Copy(buf, cmd.Stdin)
+			io.Copy(buf, cmd.Stdin) //nolint:errcheck
 			// docker run's stdin is a pups config
 			Expect(buf.String()).To(ContainSubstring("path: /etc/service/nginx/run"))
 		})
 
 		It("Should run docker run followed by docker commit and rm container when configuring", func() {
 			runner := ddocker.DockerConfigureCmd{Config: "test"}
-			runner.Run(cli, &ctx)
+			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(3))
 
 			checkConfigureCmd(RanCmds[0])
@@ -242,7 +242,7 @@ var _ = Describe("Build", func() {
 
 		It("Should run all docker commands for full bootstrap", func() {
 			runner := ddocker.DockerBootstrapCmd{Config: "test"}
-			runner.Run(cli, &ctx)
+			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(5))
 			checkBuildCmd(RanCmds[0])
 			checkMigrateCmd(RanCmds[1])
