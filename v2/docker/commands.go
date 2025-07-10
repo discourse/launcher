@@ -26,7 +26,7 @@ type DockerBuilder struct {
 
 func (r *DockerBuilder) Run(ctx context.Context) error {
 	if r.ImageTag == "" {
-		r.ImageTag = r.Namespace+"/"+r.Config.Name
+		r.ImageTag = r.Namespace + "/" + r.Config.Name
 	}
 	cmd := exec.CommandContext(ctx, utils.DockerPath, "build")
 	TimeoutDockerBuild(cmd)
