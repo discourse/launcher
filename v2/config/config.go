@@ -245,13 +245,6 @@ func (config *Config) dockerfileExpose() string {
 	return strings.Join(builder, "\n")
 }
 
-func (config *Config) GetRunImage() string {
-	if len(config.RunImage) > 0 {
-		return config.RunImage
-	}
-	return "local_discourse/" + config.Name
-}
-
 func (config *Config) GetDockerHostname(defaultHostname string) string {
 	_, exists := config.Env["DOCKER_USE_HOSTNAME"]
 	re := regexp.MustCompile(`[^a-zA-Z-]`)

@@ -89,11 +89,16 @@ func (r *StartCmd) Run(cli *Cli, ctx context.Context) error {
 	extraFlags := strings.Fields(r.DockerArgs)
 	bootCmd := config.GetBootCommand()
 
+	namespace := cli.Namespace
+	if namespace == "" {
+		namespace = utils.DefaultNamespace
+	}
 	runner := docker.DockerRunner{
 		Config:      config,
 		ContainerId: r.Config,
 		DryRun:      r.DryRun,
 		CustomImage: r.RunImage,
+		Namespace:   namespace,
 		Restart:     restart,
 		Detatch:     detatch,
 		ExtraFlags:  extraFlags,
@@ -119,9 +124,14 @@ func (r *RunCmd) Run(cli *Cli, ctx context.Context) error {
 		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
 	}
 	extraFlags := strings.Fields(r.DockerArgs)
+	namespace := cli.Namespace
+	if namespace == "" {
+		namespace = utils.DefaultNamespace
+	}
 	runner := docker.DockerRunner{
 		Config:      config,
 		CustomImage: r.RunImage,
+		Namespace:   namespace,
 		SkipPorts:   true,
 		Rm:          true,
 		Cmd:         r.Cmd,
