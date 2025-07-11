@@ -88,6 +88,15 @@ func main() {
 					"** FAILED TO BOOTSTRAP ** please scroll up and look for earlier error messages, there may be more than one.\n"+
 					"./discourse-doctor may help diagnose the problem.", exiterr.ExitCode())
 		}
+	} else if bundledPluginErr, ok := err.(*utils.BundledPluginError); ok {
+		ctx.Fatalf(bundledPluginErr.Error()+"\n"+
+			"---\n"+
+			"HINT: The plugin '%[1]s' is now bundled with Discourse and should not be included in your container configuration.\n"+
+			"Remove the line 'git clone https://github.com/discourse/%[1]s' from %[2]s, then try again.\n"+
+			"For more information, see https://meta.discourse.org/t/373574\n"+
+			"---\n",
+			bundledPluginErr.PluginName,
+			bundledPluginErr.ConfigFile)
 	} else {
 		ctx.FatalIfErrorf(err)
 	}

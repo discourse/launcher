@@ -11,6 +11,11 @@ const Version = "v2.0.6"
 
 const DefaultNamespace = "local_discourse"
 
+// Bundled plugins that we want to warn
+var BundledPlugins = []string{
+	"discourse-reactions",
+}
+
 // Known secrets, or otherwise not public info from config so we can build public images
 var KnownSecrets = []string{
 	"DISCOURSE_DB_HOST",
