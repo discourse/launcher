@@ -42,7 +42,9 @@ var _ = Describe("Build", func() {
 	Context("When running build commands", func() {
 		var checkBuildCmd = func(cmd exec.Cmd) {
 			Expect(cmd.String()).To(ContainSubstring("docker build"))
-			Expect(cmd.String()).To(ContainSubstring("--build-arg DISCOURSE_DEVELOPER_EMAILS"))
+			//secret build args envs are ignored
+			Expect(cmd.String()).ToNot(ContainSubstring("--build-arg DISCOURSE_DB_PASSWORD"))
+			Expect(cmd.String()).To(ContainSubstring("--build-arg RUBY_GC_HEAP_INIT_SLOTS"))
 			Expect(cmd.Dir).To(Equal(testDir))
 
 			//db password is ignored

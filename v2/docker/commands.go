@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -36,6 +37,9 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 	cmd.Env = append(cmd.Env, env...)
 	cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=plain")
 	for k := range r.Config.Env {
+		if slices.Contains(utils.KnownSecrets, k) {
+			continue
+		}
 		cmd.Args = append(cmd.Args, "--build-arg")
 		cmd.Args = append(cmd.Args, k)
 	}
