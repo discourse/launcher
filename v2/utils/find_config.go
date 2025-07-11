@@ -30,7 +30,7 @@ func FindConfigNames() []string {
 	flags.Parse(flagLine) //nolint:errcheck
 
 	// search in the current conf dir for any files
-	confDir := strings.TrimRight(*confDirArg, "/") + "/"
+	confDir := *confDirArg
 	confFiles := []string{}
 	files, err := os.ReadDir(confDir)
 	if err == nil {

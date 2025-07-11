@@ -90,7 +90,7 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 		return nil, errors.New(msg)
 	}
 
-	config_filename := string(strings.TrimRight(dir, "/") + "/" + config.Name + ".yml")
+	config_filename := filepath.Join(dir, config.Name + ".yml")
 	content, err := os.ReadFile(config_filename)
 
 	if err != nil {
@@ -171,7 +171,7 @@ func (config *Config) WriteYamlConfig(dir string, configFile string) error {
 	if configFile == "" {
 		configFile = "config.yaml"
 	}
-	file := strings.TrimRight(dir, "/") + "/" + configFile
+	file := filepath.Join(dir, configFile)
 	if err := os.WriteFile(file, []byte(config.Yaml()), 0660); err != nil {
 		return errors.New("error writing config file " + file)
 	}
