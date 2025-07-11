@@ -93,9 +93,6 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	content, err := os.ReadFile(config_filename)
 
 	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println("config file does not exist: " + config_filename)
-		}
 		return nil, err
 	}
 
