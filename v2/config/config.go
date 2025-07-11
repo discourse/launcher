@@ -85,8 +85,7 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	matched, _ := regexp.MatchString("[[:upper:]/ !@#$%^&*()+~`=]", configName)
 
 	if matched {
-		msg := "ERROR: Config name '" + configName + "' must not contain upper case characters, spaces or special characters. Correct config name and rerun."
-		fmt.Println(msg)
+		msg := "config name '" + configName + "' must not contain upper case characters, spaces or special characters"
 		return nil, errors.New(msg)
 	}
 
@@ -135,7 +134,7 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	}
 
 	if config.BaseImage == "" {
-		return nil, errors.New("no base image specified in config! set base image with `base_image: {imagename}`")
+		return nil, errors.New("no base image specified in config, set base image with `base_image: {imagename}`")
 	}
 
 	return config, nil
@@ -173,7 +172,7 @@ func (config *Config) WriteYamlConfig(dir string, configFile string) error {
 	}
 	file := filepath.Join(dir, configFile)
 	if err := os.WriteFile(file, []byte(config.Yaml()), 0660); err != nil {
-		return errors.New("error writing config file " + file)
+		return err
 	}
 	return nil
 }

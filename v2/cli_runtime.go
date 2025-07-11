@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -71,7 +70,7 @@ func (r *StartCmd) Run(cli *Cli, ctx context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
+		return err
 	}
 
 	defaultHostname, _ := os.Hostname()
@@ -121,7 +120,7 @@ type RunCmd struct {
 func (r *RunCmd) Run(cli *Cli, ctx context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
+		return err
 	}
 	extraFlags := strings.Fields(r.DockerArgs)
 	namespace := cli.Namespace
@@ -257,7 +256,7 @@ func (r *RebuildCmd) Run(cli *Cli, ctx context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
+		return err
 	}
 
 	// if we're not in an all-in-one setup, we can run migrations while the app is running
@@ -361,7 +360,8 @@ func (r *CleanupCmd) Run(cli *Cli, ctx context.Context) error {
 			fmt.Fprintln(utils.Out, "removing old PostgreSQL data cluster at /var/discourse/shared/standalone/postgres_data_old...") //nolint:errcheck
 			os.RemoveAll("/var/discourse/shared/standalone/postgres_data_old")                                                       //nolint:errcheck
 		} else {
-			return errors.New("Cancelled")
+			fmt.Println("canceled removing old PostgreSQL data")
+			return nil
 		}
 	}
 

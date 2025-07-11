@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"os"
 	"strings"
@@ -23,19 +22,19 @@ type DockerBuildCmd struct {
 	BakeEnv    bool     `short:"e" help:"Bake in the configured environment to image after build."`
 	Tag        string   `short:"t" help:"Resulting image tag. Defaults to {namespace}/{config}"`
 	Config     string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
-	ExtraFlags []string `arg:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
+	ExtraFlags []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
 }
 
 func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
+		return err
 	}
 
 	dir := cli.BuildDir
 	if dir == "" {
 		if dir, err = os.MkdirTemp("", "launcher"); err != nil {
-			return errors.New("cannot create temp directory")
+			return err
 		}
 	}
 	defer os.RemoveAll(dir) //nolint:errcheck
@@ -73,7 +72,7 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
+		return err
 	}
 
 	var uuidString string
@@ -119,7 +118,7 @@ type DockerMigrateCmd struct {
 func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
 	if err != nil {
-		return errors.New("YAML syntax error. Please check your containers/*.yml config files")
+		return err
 	}
 	containerId := "discourse-build-" + uuid.NewString()
 	env := []string{"SKIP_EMBER_CLI_COMPILE=1"}

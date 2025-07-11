@@ -146,6 +146,6 @@ CMD ["/sbin/boot"]`))
 	It("should error if no base config LoadConfig to load yaml configuration", func() {
 		_, err := config.LoadConfig("../test/containers", "test-no-base-image", true, "../test")
 		Expect(err).ToNot(BeNil())
-		Expect(err.Error()).To(Equal("no base image specified in config! set base image with `base_image: {imagename}`"))
+		Expect(err.Error()).To(Equal("no base image specified in config, set base image with `base_image: {imagename}`"))
 	})
 })
