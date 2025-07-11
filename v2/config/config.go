@@ -90,7 +90,7 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 		return nil, errors.New(msg)
 	}
 
-	config_filename := filepath.Join(dir, config.Name + ".yml")
+	config_filename := filepath.Join(dir, config.Name+".yml")
 	content, err := os.ReadFile(config_filename)
 
 	// Temporary helper to provide a more useful error message when a bundled plugin is still referenced in the config file.
@@ -211,7 +211,9 @@ func (config *Config) GetDockerArgs() []string {
 func (config *Config) dockerfileEnvs() string {
 	builder := []string{}
 	for k := range config.Env {
-		builder = append(builder, "ENV "+k+"=${"+k+"}")
+		if !slices.Contains(utils.KnownSecrets, k) {
+			builder = append(builder, "ENV "+k+"=${"+k+"}")
+		}
 	}
 	slices.Sort(builder)
 	return strings.Join(builder, "\n")
@@ -231,7 +233,9 @@ func (config *Config) dockerfileDefaultEnvs() string {
 func (config *Config) dockerfileArgs() string {
 	builder := []string{}
 	for k := range config.Env {
-		builder = append(builder, "ARG "+k)
+		if !slices.Contains(utils.KnownSecrets, k) {
+			builder = append(builder, "ARG "+k)
+		}
 	}
 	slices.Sort(builder)
 	return strings.Join(builder, "\n")
