@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -56,7 +57,7 @@ type Config struct {
 }
 
 func (config *Config) loadTemplate(templateDir string, template string) error {
-	template_filename := strings.TrimRight(templateDir, "/") + "/" + string(template)
+	template_filename := filepath.Join(templateDir, template)
 	content, err := os.ReadFile(template_filename)
 	if err != nil {
 		if os.IsNotExist(err) {

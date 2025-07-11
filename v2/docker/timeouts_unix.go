@@ -5,11 +5,12 @@ package docker
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"os/exec"
 	"runtime"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/discourse/launcher/v2/utils"
 )

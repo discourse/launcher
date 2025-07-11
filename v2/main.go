@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/alecthomas/kong"
-	"github.com/discourse/launcher/v2/utils"
-	"github.com/posener/complete"
-	"github.com/willabides/kongplete"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"github.com/alecthomas/kong"
+	"github.com/discourse/launcher/v2/utils"
+	"github.com/posener/complete"
+	"github.com/willabides/kongplete"
 )
 
 type Cli struct {
