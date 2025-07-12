@@ -26,6 +26,11 @@ type DockerBuilder struct {
 }
 
 func (r *DockerBuilder) Run(ctx context.Context) error {
+	// always use launcher tag when the tag given by launcher is set explicitly
+	// otherwise, only use tag when tag not set in extra docker flags
+	useLauncherTag := r.ImageTag != "" || !slices.ContainsFunc(r.ExtraFlags, func(f string) bool {
+		return strings.HasPrefix(f, "--tag=") || strings.HasPrefix(f, "-t=") || f == "--tag" || f == "-t"
+	})
 	if r.ImageTag == "" {
 		r.ImageTag = r.Namespace + "/" + r.Config.Name
 	}
@@ -45,8 +50,10 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 	cmd.Args = append(cmd.Args, "--no-cache")
 	cmd.Args = append(cmd.Args, "--pull")
 	cmd.Args = append(cmd.Args, "--force-rm")
-	cmd.Args = append(cmd.Args, "--tag")
-	cmd.Args = append(cmd.Args, r.ImageTag)
+	if useLauncherTag {
+		cmd.Args = append(cmd.Args, "--tag")
+		cmd.Args = append(cmd.Args, r.ImageTag)
+	}
 	cmd.Args = append(cmd.Args, "--shm-size=512m")
 	cmd.Args = append(cmd.Args, r.ExtraFlags...)
 	cmd.Args = append(cmd.Args, "-f")

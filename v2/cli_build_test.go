@@ -204,6 +204,36 @@ var _ = Describe("Build", func() {
 				Expect(RanCmds[0].String()).To(ContainSubstring("custom/tag"))
 			})
 
+			It("Should build with both custom tags set", func() {
+				runner := ddocker.DockerBuildCmd{Config: "test", Tag: "custom/tag", ExtraFlags: []string{"-t", "custom_docker/tag2"}}
+				runner.Run(cli, ctx) //nolint:errcheck
+				Expect(len(RanCmds)).To(Equal(1))
+				checkBuildCmd(RanCmds[0])
+				Expect(RanCmds[0].String()).To(ContainSubstring("custom/tag"))
+				Expect(RanCmds[0].String()).To(ContainSubstring("custom_docker/tag2"))
+			})
+
+			var CheckBuildWithDockerBuildTagOnly = func(dockerBuildFlags []string) {
+				runner := ddocker.DockerBuildCmd{Config: "test", ExtraFlags: dockerBuildFlags}
+				runner.Run(cli, ctx) //nolint:errcheck
+				Expect(len(RanCmds)).To(Equal(1))
+				checkBuildCmd(RanCmds[0])
+				Expect(RanCmds[0].String()).ToNot(ContainSubstring("testnamespace/test"))
+				Expect(RanCmds[0].String()).To(ContainSubstring("custom/tag"))
+			}
+			It("Should omit the default tag when only docker build tag is passed as -t=", func() {
+				CheckBuildWithDockerBuildTagOnly([]string{"-t=custom/tag"})
+			})
+			It("Should omit the default tag when only docker build tag is passed as -t", func() {
+				CheckBuildWithDockerBuildTagOnly([]string{"-t", "custom/tag"})
+			})
+			It("Should omit the default tag when only docker build tag is passed as --tag=", func() {
+				CheckBuildWithDockerBuildTagOnly([]string{"--tag=custom/tag"})
+			})
+			It("Should omit the default tag when only docker build tag is passed as --tag", func() {
+				CheckBuildWithDockerBuildTagOnly([]string{"--tag", "custom/tag"})
+			})
+
 			It("Should run docker configure with correct namespace and tags", func() {
 				runner := ddocker.DockerConfigureCmd{Config: "test", SourceTag: "source/build"}
 				runner.Run(cli, ctx) //nolint:errcheck
