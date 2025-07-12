@@ -149,7 +149,7 @@ func (config *Config) Yaml() string {
 	return strings.Join(config.rawYaml, "_FILE_SEPERATOR_")
 }
 
-func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, configFile string) string {
+func (config *Config) Dockerfile(pupsArgs string, configFile string) string {
 	if configFile == "" {
 		configFile = "config.yaml"
 	}
@@ -157,11 +157,7 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, configFile strin
 	builder.WriteString("ARG dockerfile_from_image=" + config.BaseImage + "\n")
 	builder.WriteString("FROM ${dockerfile_from_image}\n")
 	builder.WriteString(config.dockerfileArgs() + "\n")
-	if bakeEnv {
-		builder.WriteString(config.dockerfileEnvs() + "\n")
-	} else {
-		builder.WriteString(config.dockerfileDefaultEnvs() + "\n")
-	}
+	builder.WriteString(config.dockerfileDefaultEnvs() + "\n")
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
 	builder.WriteString("RUN " +

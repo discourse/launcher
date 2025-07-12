@@ -39,7 +39,7 @@ var _ = Describe("Config", func() {
 	})
 
 	It("can convert pups config to dockerfile format and bake in default env", func() {
-		dockerfile := conf.Dockerfile("", false, "config.yaml")
+		dockerfile := conf.Dockerfile("", "config.yaml")
 		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
 ARG LANG
 ARG LANGUAGE
@@ -53,39 +53,6 @@ ARG RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
 ARG UNICORN_SIDEKIQS
 ARG UNICORN_WORKERS
 ENV RAILS_ENV=${RAILS_ENV}
-ENV RUBY_GC_HEAP_GROWTH_MAX_SLOTS=${RUBY_GC_HEAP_GROWTH_MAX_SLOTS}
-ENV RUBY_GC_HEAP_INIT_SLOTS=${RUBY_GC_HEAP_INIT_SLOTS}
-ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=${RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR}
-ENV UNICORN_SIDEKIQS=${UNICORN_SIDEKIQS}
-ENV UNICORN_WORKERS=${UNICORN_WORKERS}
-EXPOSE 443
-EXPOSE 80
-EXPOSE 90
-COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
-CMD ["/sbin/boot"]`))
-	})
-
-	It("can generate a dockerfile with all env baked into the image", func() {
-		dockerfile := conf.Dockerfile("", true, "config.yaml")
-		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
-ARG LANG
-ARG LANGUAGE
-ARG LC_ALL
-ARG MULTI
-ARG RAILS_ENV
-ARG REPLACED
-ARG RUBY_GC_HEAP_GROWTH_MAX_SLOTS
-ARG RUBY_GC_HEAP_INIT_SLOTS
-ARG RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
-ARG UNICORN_SIDEKIQS
-ARG UNICORN_WORKERS
-ENV LANG=${LANG}
-ENV LANGUAGE=${LANGUAGE}
-ENV LC_ALL=${LC_ALL}
-ENV MULTI=${MULTI}
-ENV RAILS_ENV=${RAILS_ENV}
-ENV REPLACED=${REPLACED}
 ENV RUBY_GC_HEAP_GROWTH_MAX_SLOTS=${RUBY_GC_HEAP_GROWTH_MAX_SLOTS}
 ENV RUBY_GC_HEAP_INIT_SLOTS=${RUBY_GC_HEAP_INIT_SLOTS}
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=${RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR}

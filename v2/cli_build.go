@@ -19,7 +19,6 @@ import (
  * bootstrap
  */
 type DockerBuildCmd struct {
-	BakeEnv    bool     `short:"e" help:"Bake in the configured environment to image after build."`
 	Tag        string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
 	Config     string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
 	ExtraFlags []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
@@ -46,7 +45,7 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 	pupsArgs := "--skip-tags=precompile,migrate,db"
 	builder := docker.DockerBuilder{
 		Config:     config,
-		Stdin:      strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv, configFile)),
+		Stdin:      strings.NewReader(config.Dockerfile(pupsArgs, configFile)),
 		Dir:        dir,
 		ImageTag:   r.Tag,
 		ExtraFlags: r.ExtraFlags,
@@ -141,7 +140,7 @@ func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
-	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, Tag: tag}
+	buildStep := DockerBuildCmd{Config: r.Config, Tag: tag}
 	migrateStep := DockerMigrateCmd{Config: r.Config, Tag: tag}
 	configureStep := DockerConfigureCmd{Config: r.Config, SourceTag: tag, TargetTag: tag}
 	if err := buildStep.Run(cli, ctx); err != nil {
