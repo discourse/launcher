@@ -20,7 +20,6 @@ type DockerBuilder struct {
 	Config     *config.Config
 	Stdin      io.Reader
 	Dir        string
-	Namespace  string
 	ImageTag   string
 	ExtraFlags []string
 }
@@ -32,7 +31,7 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 		return strings.HasPrefix(f, "--tag=") || strings.HasPrefix(f, "-t=") || f == "--tag" || f == "-t"
 	})
 	if r.ImageTag == "" {
-		r.ImageTag = r.Namespace + "/" + r.Config.Name
+		r.ImageTag = utils.DefaultNamespace + "/" + r.Config.Name
 	}
 	cmd := exec.CommandContext(ctx, utils.DockerPath, "build")
 	TimeoutDockerBuild(cmd)
@@ -75,7 +74,6 @@ type DockerRunner struct {
 	Rm          bool
 	ContainerId string
 	CustomImage string
-	Namespace   string
 	Cmd         []string
 	Stdin       io.Reader
 	SkipPorts   bool
@@ -189,7 +187,7 @@ func (r *DockerRunner) Run(ctx context.Context) error {
 	} else if len(r.Config.RunImage) > 0 {
 		cmd.Args = append(cmd.Args, r.Config.RunImage)
 	} else {
-		cmd.Args = append(cmd.Args, r.Namespace+"/"+r.Config.Name)
+		cmd.Args = append(cmd.Args, utils.DefaultNamespace+"/"+r.Config.Name)
 	}
 
 	cmd.Args = append(cmd.Args, r.Cmd...)

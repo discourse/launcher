@@ -183,19 +183,7 @@ var _ = Describe("Build", func() {
 			checkMigrateCmd(RanCmds[0])
 		})
 
-		Context("With a custom namespace", func() {
-			BeforeEach(func() {
-				cli.Namespace = "testnamespace"
-			})
-
-			It("Should run docker build with correct namespace and custom flags", func() {
-				runner := ddocker.DockerBuildCmd{Config: "test"}
-				runner.Run(cli, ctx) //nolint:errcheck
-				Expect(len(RanCmds)).To(Equal(1))
-				checkBuildCmd(RanCmds[0])
-				Expect(RanCmds[0].String()).To(ContainSubstring("testnamespace/test"))
-			})
-
+		Context("With various tag arguments", func() {
 			It("Should run docker build with custom tag", func() {
 				runner := ddocker.DockerBuildCmd{Config: "test", Tag: "custom/tag"}
 				runner.Run(cli, ctx) //nolint:errcheck
@@ -218,7 +206,7 @@ var _ = Describe("Build", func() {
 				runner.Run(cli, ctx) //nolint:errcheck
 				Expect(len(RanCmds)).To(Equal(1))
 				checkBuildCmd(RanCmds[0])
-				Expect(RanCmds[0].String()).ToNot(ContainSubstring("testnamespace/test"))
+				Expect(RanCmds[0].String()).ToNot(ContainSubstring("local_discourse/test"))
 				Expect(RanCmds[0].String()).To(ContainSubstring("custom/tag"))
 			}
 			It("Should omit the default tag when only docker build tag is passed as -t=", func() {
@@ -247,7 +235,7 @@ var _ = Describe("Build", func() {
 					"docker commit " +
 						`--change LABEL org\.opencontainers\.image\.created="[\d\-T:Z]+" ` +
 						`--change CMD \["/sbin/boot"\] ` +
-						"discourse-build-test testnamespace/test",
+						"discourse-build-test local_discourse/test",
 				))
 				checkConfigureClean(RanCmds[2])
 			})
@@ -256,7 +244,7 @@ var _ = Describe("Build", func() {
 				runner := ddocker.DockerMigrateCmd{Config: "test"}
 				runner.Run(cli, ctx) //nolint:errcheck
 				Expect(len(RanCmds)).To(Equal(1))
-				Expect(RanCmds[0].String()).To(ContainSubstring("testnamespace/test "))
+				Expect(RanCmds[0].String()).To(ContainSubstring("local_discourse/test "))
 			})
 		})
 

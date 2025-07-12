@@ -53,7 +53,7 @@ var _ = Describe("Commands", func() {
 				os.RemoveAll(testDir)        //nolint:errcheck
 			})
 			It("Inherits environment for docker build", func() {
-				runner := docker.DockerBuilder{Config: conf, Stdin: nil, Dir: testDir, Namespace: "test", ImageTag: "test/test"}
+				runner := docker.DockerBuilder{Config: conf, Stdin: nil, Dir: testDir, ImageTag: "test/test"}
 				runner.Run(ctx) //nolint:errcheck
 				cmd := GetLastCommand()
 				Expect(cmd.Env).To(ContainElement("launcher_test=testval"))

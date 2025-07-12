@@ -20,7 +20,7 @@ import (
  */
 type DockerBuildCmd struct {
 	BakeEnv    bool     `short:"e" help:"Bake in the configured environment to image after build."`
-	Tag        string   `short:"t" help:"Resulting image tag. Defaults to {namespace}/{config}"`
+	Tag        string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
 	Config     string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
 	ExtraFlags []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
 }
@@ -43,16 +43,11 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 		return err
 	}
 
-	namespace := cli.Namespace
-	if namespace == "" {
-		namespace = utils.DefaultNamespace
-	}
 	pupsArgs := "--skip-tags=precompile,migrate,db"
 	builder := docker.DockerBuilder{
 		Config:     config,
 		Stdin:      strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv, configFile)),
 		Dir:        dir,
-		Namespace:  namespace,
 		ImageTag:   r.Tag,
 		ExtraFlags: r.ExtraFlags,
 	}
@@ -63,8 +58,8 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerConfigureCmd struct {
-	SourceTag string `short:"s" help:"Source image tag to build from. Defaults to {namespace}/{config}"`
-	TargetTag string `short:"t" name:"tag" help:"Target image tag to save as. Defaults to {namespace}/{config}"`
+	SourceTag string `short:"s" help:"Source image tag to build from. Defaults to 'local_discourse/{config}'"`
+	TargetTag string `short:"t" name:"tag" help:"Target image tag to save as. Defaults to 'local_discourse/{config}'"`
 	Config    string `arg:"" name:"config" help:"config" predictor:"config"`
 }
 
@@ -84,15 +79,11 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 	}
 
 	containerId := "discourse-build-" + uuidString
-	namespace := cli.Namespace
-	if namespace == "" {
-		namespace = utils.DefaultNamespace
-	}
-	sourceTag := namespace + "/" + r.Config
+	sourceTag := utils.DefaultNamespace + "/" + r.Config
 	if len(r.SourceTag) > 0 {
 		sourceTag = r.SourceTag
 	}
-	targetTag := namespace + "/" + r.Config
+	targetTag := utils.DefaultNamespace + "/" + r.Config
 	if len(r.TargetTag) > 0 {
 		targetTag = r.TargetTag
 	}
@@ -111,7 +102,7 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 
 type DockerMigrateCmd struct {
 	Config                       string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag                          string `help:"Image tag to migrate. Defaults to {namespace}/{config}"`
+	Tag                          string `help:"Image tag to migrate. Defaults to 'local_discourse/{config}'"`
 	SkipPostDeploymentMigrations bool   `env:"SKIP_POST_DEPLOYMENT_MIGRATIONS" help:"Skip post-deployment migrations. Runs safe migrations only. Defers breaking-change migrations. Make sure you run post-deployment migrations after a full deploy is complete if you use this option."`
 }
 
@@ -126,11 +117,7 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 		env = append(env, "SKIP_POST_DEPLOYMENT_MIGRATIONS=1")
 	}
 
-	namespace := cli.Namespace
-	if namespace == "" {
-		namespace = utils.DefaultNamespace
-	}
-	tag := namespace + "/" + r.Config
+	tag := utils.DefaultNamespace + "/" + r.Config
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
@@ -146,15 +133,11 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 
 type DockerBootstrapCmd struct {
 	Config string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag    string `short:"t" help:"Image tag to bootstrap. Defaults to {namespace}/{config}"`
+	Tag    string `short:"t" help:"Image tag to bootstrap. Defaults to 'local_discourse/{config}'"`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
-	namespace := cli.Namespace
-	if namespace == "" {
-		namespace = utils.DefaultNamespace
-	}
-	tag := namespace + "/" + r.Config
+	tag := utils.DefaultNamespace + "/" + r.Config
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
