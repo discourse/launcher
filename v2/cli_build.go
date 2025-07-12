@@ -102,7 +102,7 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 
 type DockerMigrateCmd struct {
 	Config                       string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag                          string `help:"Image tag to migrate. Defaults to 'local_discourse/{config}'"`
+	Tag                          string `help:"Image to migrate. Defaults to 'local_discourse/{config}'"`
 	SkipPostDeploymentMigrations bool   `env:"SKIP_POST_DEPLOYMENT_MIGRATIONS" help:"Skip post-deployment migrations. Runs safe migrations only. Defers breaking-change migrations. Make sure you run post-deployment migrations after a full deploy is complete if you use this option."`
 }
 
@@ -133,7 +133,7 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 
 type DockerBootstrapCmd struct {
 	Config string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag    string `short:"t" help:"Image tag to bootstrap. Defaults to 'local_discourse/{config}'"`
+	Tag    string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
