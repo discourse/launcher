@@ -31,13 +31,13 @@ The resulting image is able to be used in Kubernetes and other docker environmen
 
 This is done by deferring finishing the build step, to a later configure step -- which boostraps the db, and precompiles assets.
 
-The `configure` and `migrate` steps can now be done on boot through use of env vars set in the `app.yml` config: `CREATE_DB_ON_BOOT`, `MIGRATE_ON_BOOT`, and `PRECOMPILE_ON_BOOT`, which allows for more portable containers able to drop in and bootstrap themselves and the database as they come into service.
+The `configure` and `migrate` steps can now be done on boot through use of env vars set in the `app.yml` config: `CREATE_DB_ON_BOOT`, `MIGRATE_ON_BOOT`, and `PRECOMPILE_ON_BOOT`, which allows for more portable images able to drop in and bootstrap themselves and the database as they come into service.
 
 #### Build: Better environment management
 
-The resulting image from a build is a container with no environment (unless `--bake-env` is specified). Additionally, well-known secrets are excluded from the build environment, resulting in a clean history of the prebuilt image that may be more easily shared.
+The resulting image from a build comes with minimal environment variables set. Secrets and other env-specific environment variables are excluded from the build environment, resulting in a clean history of the prebuilt image that may be more easily shared.
 
-Environment is only bound to a container either with `--bake-env` on build, or on a subsequent `configure` step.
+Further environment is only bound to an image on a subsequent `configure` step.
 
 #### Migrate: Adds support to *when* migrations are run
 
