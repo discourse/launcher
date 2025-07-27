@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -93,13 +92,6 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	config_filename := filepath.Join(dir, config.Name+".yml")
 	content, err := os.ReadFile(config_filename)
 
-	// Temporary helper to provide a more useful error message when a bundled plugin is still referenced in the config file.
-	for _, bundledPlugin := range utils.BundledPlugins {
-		if bytes.Contains(content, []byte("git clone https://github.com/discourse/"+bundledPlugin)) {
-			return nil, utils.NewBundledPluginError(bundledPlugin, config_filename)
-		}
-	}
-
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +135,18 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	}
 
 	return config, nil
+}
+
+func (config *Config) ValidateConfig(parentError error) error {
+	// Temporary helper to provide a more useful error message when a bundled plugin is still referenced in the config file.
+	for _, content := range config.rawYaml {
+		for _, bundledPlugin := range utils.BundledPlugins {
+			if strings.Contains(content, "git clone https://github.com/discourse/"+bundledPlugin) {
+				return utils.NewBundledPluginError(parentError, bundledPlugin, config.Name)
+			}
+		}
+	}
+	return nil
 }
 
 func (config *Config) Yaml() string {
