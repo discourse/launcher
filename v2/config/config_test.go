@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"errors"
 	"os"
 	"strings"
 
@@ -80,9 +81,16 @@ CMD ["/sbin/boot"]`))
 			Expect(config.GetDockerHostname("asdf!@#")).To(Equal("asdf---"))
 		})
 	})
+
 	It("should error if no base config LoadConfig to load yaml configuration", func() {
 		_, err := config.LoadConfig("../test/containers", "test-no-base-image", true, "../test")
 		Expect(err).ToNot(BeNil())
 		Expect(err.Error()).To(Equal("no base image specified in config, set base image with `base_image: {imagename}`"))
+	})
+
+	It("should be able to run LoadConfig to load yaml configuration", func() {
+		conf, err := config.LoadConfig("../test/containers", "test-incompatible-plugin", true, "../test")
+		Expect(err).To(BeNil())
+		Expect(conf.ValidateConfig(errors.New("test"))).To(MatchError("test: the plugin 'discourse-reactions' is bundled with Discourse"))
 	})
 })

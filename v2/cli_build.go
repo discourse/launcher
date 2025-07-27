@@ -51,6 +51,9 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 		ExtraFlags: r.ExtraFlags,
 	}
 	if err := builder.Run(ctx); err != nil {
+		if configErr := config.ValidateConfig(err); configErr != nil {
+			return configErr
+		}
 		return err
 	}
 	return nil
