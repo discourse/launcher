@@ -212,6 +212,17 @@ func (config *Config) GetDockerArgs() []string {
 	return strings.Fields(config.DockerArgs)
 }
 
+func (config *Config) dockerfileEnvs() string {
+	builder := []string{}
+	for k := range config.Env {
+		if !slices.Contains(utils.KnownSecrets, k) {
+			builder = append(builder, "ENV "+k+"=${"+k+"}")
+		}
+	}
+	slices.Sort(builder)
+	return strings.Join(builder, "\n")
+}
+
 func (config *Config) dockerfileDefaultEnvs() string {
 	builder := []string{}
 	for k := range config.Env {
