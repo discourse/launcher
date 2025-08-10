@@ -131,4 +131,34 @@ CMD ["/sbin/boot"]`))
 		Expect(err).To(BeNil())
 		Expect(conf.BaseImage).To(Equal("test"))
 	})
+
+
+	It("can configure build mounts", func() {
+		conf, _ = config.LoadConfig("../test/containers", "test-mounts", true, "../test")
+		dockerfile := conf.Dockerfile("", false, "config.yaml")
+		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
+ARG LANG
+ARG LANGUAGE
+ARG LC_ALL
+ARG MULTI
+ARG RAILS_ENV
+ARG REPLACED
+ARG RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+ARG RUBY_GC_HEAP_INIT_SLOTS
+ARG RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+ARG UNICORN_SIDEKIQS
+ARG UNICORN_WORKERS
+ENV RAILS_ENV=${RAILS_ENV}
+ENV RUBY_GC_HEAP_GROWTH_MAX_SLOTS=${RUBY_GC_HEAP_GROWTH_MAX_SLOTS}
+ENV RUBY_GC_HEAP_INIT_SLOTS=${RUBY_GC_HEAP_INIT_SLOTS}
+ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=${RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR}
+ENV UNICORN_SIDEKIQS=${UNICORN_SIDEKIQS}
+ENV UNICORN_WORKERS=${UNICORN_WORKERS}
+EXPOSE 443
+EXPOSE 80
+EXPOSE 90
+COPY config.yaml /temp-config.yaml
+RUN --mount=type=cache,target=/var/test/cache --mount=type=cache,target=/tmp/cache2 cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
+CMD ["/sbin/boot"]`))
+	})
 })

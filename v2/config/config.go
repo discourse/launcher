@@ -40,6 +40,7 @@ type Config struct {
 	DockerArgs    string            `yaml:"docker_args,omitempty"`
 	Templates     []string          `yaml:"templates,omitempty"`
 	Expose        []string          `yaml:"expose,omitempty"`
+	CacheMounts   []string          `yaml:"cache_mounts,omitempty"`
 	Env           map[string]string `yaml:"env,omitempty"`
 	Labels        map[string]string `yaml:"labels,omitempty"`
 	Volumes       []struct {
@@ -169,6 +170,7 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, configFile strin
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
 	builder.WriteString("RUN " +
+		config.dockerfileCacheMounts() +
 		"cat /temp-config.yaml | /usr/local/bin/pups " + pupsArgs + " --stdin " +
 		"&& rm /temp-config.yaml\n")
 	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]")
@@ -256,6 +258,18 @@ func (config *Config) dockerfileExpose() string {
 	}
 	slices.Sort(builder)
 	return strings.Join(builder, "\n")
+}
+
+func (config *Config) dockerfileCacheMounts() string {
+	builder := []string{}
+	for _, v := range config.CacheMounts {
+		builder = append(builder, "--mount=type=cache,target="+v)
+	}
+	mounts := strings.Join(builder, " ")
+	if len(config.CacheMounts) > 0 {
+		mounts = mounts + " "
+	}
+	return mounts
 }
 
 func (config *Config) GetDockerHostname(defaultHostname string) string {
