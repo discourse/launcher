@@ -169,7 +169,7 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, configFile strin
 	}
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
-	builder.WriteString("ARG CACHE_EPOCH\n")
+	builder.WriteString("ARG CACHE_EPOCH=0\n")
 	builder.WriteString("RUN " +
 		config.dockerfileCacheMounts() +
 		"cat /temp-config.yaml | /usr/local/bin/pups " + pupsArgs + " --stdin " +

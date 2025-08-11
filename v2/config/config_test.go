@@ -63,7 +63,7 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-ARG CACHE_EPOCH
+ARG CACHE_EPOCH=0
 RUN cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 	})
@@ -97,7 +97,7 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-ARG CACHE_EPOCH
+ARG CACHE_EPOCH=0
 RUN cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 	})
@@ -160,7 +160,7 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-ARG CACHE_EPOCH
+ARG CACHE_EPOCH=0
 RUN --mount=type=cache,target=/var/test/cache --mount=type=cache,target=/tmp/cache2 cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 	})
