@@ -64,6 +64,12 @@ var _ = Describe("Commands", func() {
 				cmd := GetLastCommand()
 				Expect(cmd.Env).To(ContainElement("launcher_test=testval"))
 			})
+			It("cache busts", func() {
+				runner := docker.DockerBuilder{Config: conf, Stdin: nil, Dir: testDir, ImageTag: "test/test"}
+				runner.Run(ctx) //nolint:errcheck
+				cmd := GetLastCommand()
+				Expect(cmd.String()).To(MatchRegexp(` CACHE_EPOCH=[\d]+ `))
+			})
 		})
 	})
 })

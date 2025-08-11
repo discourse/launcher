@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,7 +47,7 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 			cmd.Args = append(cmd.Args, k)
 		}
 	}
-	cmd.Args = append(cmd.Args, "--no-cache")
+	cmd.Args = append(cmd.Args, "--build-arg CACHE_EPOCH="+strconv.FormatInt(time.Now().Unix(), 10))
 	cmd.Args = append(cmd.Args, "--pull")
 	cmd.Args = append(cmd.Args, "--force-rm")
 	if useLauncherTag {
