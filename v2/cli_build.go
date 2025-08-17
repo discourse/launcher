@@ -61,7 +61,7 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerConfigureCmd struct {
-	SourceTag string `short:"s" help:"Source image tag to build from. Defaults to 'local_discourse/{config}'"`
+	SourceTag string `short:"s" help:"Source image tag to build from. Defaults to the config's base_image"`
 	TargetTag string `short:"t" name:"tag" help:"Target image tag to save as. Defaults to 'local_discourse/{config}'"`
 	Config    string `arg:"" name:"config" help:"config" predictor:"config"`
 }
@@ -82,7 +82,7 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 	}
 
 	containerId := "discourse-build-" + uuidString
-	sourceTag := utils.DefaultNamespace + "/" + r.Config
+	sourceTag := config.BaseImage
 	if len(r.SourceTag) > 0 {
 		sourceTag = r.SourceTag
 	}

@@ -75,7 +75,7 @@ var _ = Describe("Build", func() {
 			Expect(buf.String()).To(ContainSubstring("path: /etc/service/nginx/run"))
 		}
 
-		var checkConfigureCmd = func(cmd exec.Cmd) {
+		var checkConfigureCmd = func(cmd exec.Cmd, expectedImage string) {
 			Expect(cmd.String()).To(ContainSubstring(
 				"docker run " +
 					"--env DISCOURSE_DB_HOST " +
@@ -108,7 +108,7 @@ var _ = Describe("Build", func() {
 					"--interactive " +
 					"--expose 100 " +
 					"--name discourse-build-test " +
-					"local_discourse/test /bin/bash -c /usr/local/bin/pups --stdin --tags=db,precompile",
+					expectedImage + " /bin/bash -c /usr/local/bin/pups --stdin --tags=db,precompile",
 			))
 
 			Expect(cmd.Env).To(ContainElements(
@@ -271,7 +271,8 @@ var _ = Describe("Build", func() {
 			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(3))
 
-			checkConfigureCmd(RanCmds[0])
+			// Expected to run with base image defined in the config
+			checkConfigureCmd(RanCmds[0], "discourse/base:2.0.20250226-0128")
 			checkConfigureCommit(RanCmds[1])
 			checkConfigureClean(RanCmds[2])
 		})
@@ -282,7 +283,7 @@ var _ = Describe("Build", func() {
 			Expect(len(RanCmds)).To(Equal(5))
 			checkBuildCmd(RanCmds[0])
 			checkMigrateCmd(RanCmds[1])
-			checkConfigureCmd(RanCmds[2])
+			checkConfigureCmd(RanCmds[2], "local_discourse/test")
 			checkConfigureCommit(RanCmds[3])
 			checkConfigureClean(RanCmds[4])
 		})
