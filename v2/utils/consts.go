@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const Version = "v2.1.2"
+const Version = "v2.1.4"
 
 const DefaultNamespace = "local_discourse"
 
