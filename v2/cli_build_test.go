@@ -62,7 +62,7 @@ var _ = Describe("Build", func() {
 			Expect(err).To(MatchError(os.IsNotExist, "IsNotExist"))
 		}
 
-		var checkMigrateCmd = func(cmd exec.Cmd) {
+		var checkMigrateCmd = func(cmd exec.Cmd, tag string) {
 			Expect(cmd.String()).To(ContainSubstring("docker run"))
 			Expect(cmd.String()).To(ContainSubstring("--env DISCOURSE_DEVELOPER_EMAILS"))
 			Expect(cmd.String()).To(ContainSubstring("--env SKIP_EMBER_CLI_COMPILE=1"))
@@ -73,9 +73,10 @@ var _ = Describe("Build", func() {
 			io.Copy(buf, cmd.Stdin) //nolint:errcheck
 			// docker run's stdin is a pups config
 			Expect(buf.String()).To(ContainSubstring("path: /etc/service/nginx/run"))
+			Expect(cmd.String()).To(ContainSubstring(tag))
 		}
 
-		var checkConfigureCmd = func(cmd exec.Cmd) {
+		var checkConfigureCmd = func(cmd exec.Cmd, tag string) {
 			Expect(cmd.String()).To(ContainSubstring(
 				"docker run " +
 					"--env DISCOURSE_DB_HOST " +
@@ -108,7 +109,7 @@ var _ = Describe("Build", func() {
 					"--interactive " +
 					"--expose 100 " +
 					"--name discourse-build-test " +
-					"local_discourse/test /bin/bash -c /usr/local/bin/pups --stdin --tags=db,precompile",
+					tag + " /bin/bash -c /usr/local/bin/pups --stdin --tags=db,precompile",
 			))
 
 			Expect(cmd.Env).To(ContainElements(
@@ -180,7 +181,14 @@ var _ = Describe("Build", func() {
 			runner := ddocker.DockerMigrateCmd{Config: "test"}
 			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(1))
-			checkMigrateCmd(RanCmds[0])
+			checkMigrateCmd(RanCmds[0], "local_discourse/test")
+		})
+
+		It("Should run docker migrate with base image", func() {
+			runner := ddocker.DockerMigrateCmd{Config: "test", UseBaseImage: true}
+			runner.Run(cli, ctx) //nolint:errcheck
+			Expect(len(RanCmds)).To(Equal(1))
+			checkMigrateCmd(RanCmds[0], "discourse/base:2.0.20250226-0128")
 		})
 
 		Context("With various tag arguments", func() {
@@ -271,7 +279,17 @@ var _ = Describe("Build", func() {
 			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(3))
 
-			checkConfigureCmd(RanCmds[0])
+			checkConfigureCmd(RanCmds[0], "local_discourse/test")
+			checkConfigureCommit(RanCmds[1])
+			checkConfigureClean(RanCmds[2])
+		})
+
+		It("Should be able to use base image", func() {
+			runner := ddocker.DockerConfigureCmd{Config: "test", UseBaseImage: true}
+			runner.Run(cli, ctx) //nolint:errcheck
+			Expect(len(RanCmds)).To(Equal(3))
+
+			checkConfigureCmd(RanCmds[0], "discourse/base:2.0.20250226-0128")
 			checkConfigureCommit(RanCmds[1])
 			checkConfigureClean(RanCmds[2])
 		})
@@ -281,8 +299,8 @@ var _ = Describe("Build", func() {
 			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(5))
 			checkBuildCmd(RanCmds[0])
-			checkMigrateCmd(RanCmds[1])
-			checkConfigureCmd(RanCmds[2])
+			checkMigrateCmd(RanCmds[1], "local_discourse/test")
+			checkConfigureCmd(RanCmds[2], "local_discourse/test")
 			checkConfigureCommit(RanCmds[3])
 			checkConfigureClean(RanCmds[4])
 		})

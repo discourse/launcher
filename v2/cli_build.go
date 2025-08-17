@@ -61,9 +61,10 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerConfigureCmd struct {
-	SourceTag string `short:"s" help:"Source image tag to build from. Defaults to 'local_discourse/{config}'"`
-	TargetTag string `short:"t" name:"tag" help:"Target image tag to save as. Defaults to 'local_discourse/{config}'"`
-	Config    string `arg:"" name:"config" help:"config" predictor:"config"`
+	SourceTag    string `short:"s" help:"Source image tag to build from. Defaults to 'local_discourse/{config}'"`
+	TargetTag    string `short:"t" name:"tag" help:"Target image tag to save as. Defaults to 'local_discourse/{config}'"`
+	UseBaseImage bool   `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
+	Config       string `arg:"" name:"config" help:"config" predictor:"config"`
 }
 
 func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
@@ -83,6 +84,9 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 
 	containerId := "discourse-build-" + uuidString
 	sourceTag := utils.DefaultNamespace + "/" + r.Config
+	if r.UseBaseImage {
+		sourceTag = config.BaseImage
+	}
 	if len(r.SourceTag) > 0 {
 		sourceTag = r.SourceTag
 	}
@@ -104,9 +108,10 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerMigrateCmd struct {
-	Config                       string `arg:"" name:"config" help:"config" predictor:"config"`
 	Tag                          string `help:"Image to migrate. Defaults to 'local_discourse/{config}'"`
 	SkipPostDeploymentMigrations bool   `env:"SKIP_POST_DEPLOYMENT_MIGRATIONS" help:"Skip post-deployment migrations. Runs safe migrations only. Defers breaking-change migrations. Make sure you run post-deployment migrations after a full deploy is complete if you use this option."`
+	UseBaseImage                 bool   `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
+	Config                       string `arg:"" name:"config" help:"config" predictor:"config"`
 }
 
 func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
@@ -121,6 +126,9 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 	}
 
 	tag := utils.DefaultNamespace + "/" + r.Config
+	if r.UseBaseImage {
+		tag = config.BaseImage
+	}
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
