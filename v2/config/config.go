@@ -153,7 +153,7 @@ func (config *Config) Yaml() string {
 	return strings.Join(config.rawYaml, "_FILE_SEPERATOR_")
 }
 
-func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, configFile string) string {
+func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, includeMounts bool, configFile string) string {
 	if configFile == "" {
 		configFile = "config.yaml"
 	}
@@ -168,7 +168,20 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, configFile strin
 	}
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
-	builder.WriteString("RUN " +
+
+
+	builder.WriteString("RUN ")
+
+	// add mounts if any volumes exist and make it available on build time.
+	// they won't be modifiable at build time, but this allows any cached data
+	// to be made available to the builder
+	if includeMounts {
+		for _, v := range config.Volumes {
+			builder.WriteString("--mount=type=bind,source=" + v.Volume.Host +
+				",target=" + v.Volume.Guest + ",rw=true ")
+		}
+	}
+	builder.WriteString(
 		"cat /temp-config.yaml | /usr/local/bin/pups " + pupsArgs + " --stdin " +
 		"&& rm /temp-config.yaml\n")
 	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]")
