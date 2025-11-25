@@ -19,11 +19,11 @@ import (
  * bootstrap
  */
 type DockerBuildCmd struct {
-	BakeEnv    bool     `short:"e" help:"Bake in the configured environment to image after build."`
-	IncludeVolumes bool `short:"v" hidden:"" help:"include volume mounts at build time. No data to the host is written by this."`
-	Tag        string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	Config     string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
-	ExtraFlags []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
+	BakeEnv      bool     `short:"e" help:"Bake in the configured environment to image after build."`
+	MountVolumes bool     `short:"v" hidden:"" help:"mount volume at build time. No data to the host is written by this."`
+	Tag          string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	Config       string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
+	ExtraFlags   []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
 }
 
 func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
@@ -46,11 +46,12 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 
 	pupsArgs := "--skip-tags=precompile,migrate,db"
 	builder := docker.DockerBuilder{
-		Config:     config,
-		Stdin:      strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv, r.IncludeVolumes, configFile)),
-		Dir:        dir,
-		ImageTag:   r.Tag,
-		ExtraFlags: r.ExtraFlags,
+		Config:       config,
+		Stdin:        strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv, r.MountVolumes, configFile)),
+		Dir:          dir,
+		ImageTag:     r.Tag,
+		ExtraFlags:   r.ExtraFlags,
+		MountVolumes: r.MountVolumes,
 	}
 	if err := builder.Run(ctx); err != nil {
 		if configErr := config.ValidateConfig(err); configErr != nil {
@@ -144,9 +145,9 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerBootstrapCmd struct {
-	Config string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag    string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	IncludeVolumesOnBuild bool `short:"v" hidden:"" help:"include volume mounts at build time. No data to the host is written by this."`
+	Config       string `arg:"" name:"config" help:"config" predictor:"config"`
+	Tag          string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	MountVolumes bool   `short:"v" hidden:"" help:"mount volumes at build time. No data to the host is written by this."`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
@@ -154,7 +155,7 @@ func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
-	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, IncludeVolumes: r.IncludeVolumesOnBuild, Tag: tag}
+	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, MountVolumes: r.MountVolumes, Tag: tag}
 	migrateStep := DockerMigrateCmd{Config: r.Config, Tag: tag}
 	configureStep := DockerConfigureCmd{Config: r.Config, SourceTag: tag, TargetTag: tag}
 	if err := buildStep.Run(cli, ctx); err != nil {

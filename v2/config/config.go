@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"dario.cat/mergo"
@@ -169,21 +170,19 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, includeMounts bo
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
 
-
 	builder.WriteString("RUN ")
 
 	// add mounts if any volumes exist and make it available on build time.
 	// they won't be modifiable at build time, but this allows any cached data
 	// to be made available to the builder
 	if includeMounts {
-		for _, v := range config.Volumes {
-			builder.WriteString("--mount=type=bind,source=" + v.Volume.Host +
-				",target=" + v.Volume.Guest + ",rw=true ")
+		for i, v := range config.Volumes {
+			builder.WriteString("--mount=type=bind,from=volume_" + strconv.Itoa(i) + ",source=/,target=" + v.Volume.Guest + ",rw=true ")
 		}
 	}
 	builder.WriteString(
 		"cat /temp-config.yaml | /usr/local/bin/pups " + pupsArgs + " --stdin " +
-		"&& rm /temp-config.yaml\n")
+			"&& rm /temp-config.yaml\n")
 	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]")
 	return builder.String()
 }
