@@ -30,6 +30,15 @@ var defaultBakeEnv = []string{
 	"PRECOMPILE_ON_BOOT",
 }
 
+type Volume struct {
+	Host  string `yaml:"host"`
+	Guest string `yaml:"guest"`
+}
+
+type VolumeObject struct {
+	Volume Volume `yaml:"volume"`
+}
+
 type Config struct {
 	Name          string `yaml:"-"`
 	rawYaml       []string
@@ -43,13 +52,8 @@ type Config struct {
 	Expose        []string          `yaml:"expose,omitempty"`
 	Env           map[string]string `yaml:"env,omitempty"`
 	Labels        map[string]string `yaml:"labels,omitempty"`
-	Volumes       []struct {
-		Volume struct {
-			Host  string `yaml:"host"`
-			Guest string `yaml:"guest"`
-		} `yaml:"volume"`
-	} `yaml:"volumes,omitempty"`
-	Links []struct {
+	Volumes       []VolumeObject    `yaml:"volumes,omitempty"`
+	Links         []struct {
 		Link struct {
 			Name  string `yaml:"name"`
 			Alias string `yaml:"alias"`

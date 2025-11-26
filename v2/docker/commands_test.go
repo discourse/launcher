@@ -65,5 +65,22 @@ var _ = Describe("Commands", func() {
 				Expect(cmd.Env).To(ContainElement("launcher_test=testval"))
 			})
 		})
+
+		Context("With volume mounts", func() {
+			BeforeEach(func() {
+				conf = &config.Config{Name: "test", Volumes: []config.VolumeObject{
+					{Volume: config.Volume{Host: "/host/path1", Guest: "/guest/path1"}},
+					{Volume: config.Volume{Host: "/host/path2", Guest: "/guest/path2"}},
+				}}
+			})
+			It("is able to build with specified mounts", func() {
+				runner := docker.DockerBuilder{Config: conf, Stdin: nil, ImageTag: "test/test", MountVolumes: true}
+				runner.Run(ctx) //nolint:errcheck
+				cmd := GetLastCommand()
+				Expect(cmd.String()).To(ContainSubstring("--build-context"))
+				Expect(cmd.String()).To(ContainSubstring("volume_0=/host/path1"))
+				Expect(cmd.String()).To(ContainSubstring("volume_1=/host/path2"))
+			})
+		})
 	})
 })
