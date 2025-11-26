@@ -124,7 +124,7 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-RUN --mount=type=bind,source=/var/discourse/shared/web-only,target=/shared,rw=true --mount=type=bind,source=/var/discourse/shared/web-only/log/var-log,target=/var/log,rw=true cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
+RUN --mount=type=bind,from=volume_0,source=/,target=/shared,rw=true --mount=type=bind,from=volume_1,source=/,target=/var/log,rw=true cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 	})
 
