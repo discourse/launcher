@@ -28,6 +28,7 @@ var defaultBakeEnv = []string{
 	"CREATE_DB_ON_BOOT",
 	"MIGRATE_ON_BOOT",
 	"PRECOMPILE_ON_BOOT",
+	"DISABLE_LETSENCRYPT",
 }
 
 type Volume struct {
