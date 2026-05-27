@@ -44,6 +44,7 @@ type Config struct {
 	Name          string `yaml:"-"`
 	rawYaml       []string
 	BaseImage     string            `yaml:"base_image,omitempty"`
+	BaseImageSlim string            `yaml:"base_image_slim,omitempty"`
 	UpdatePups    bool              `yaml:"update_pups,omitempty"`
 	RunImage      string            `yaml:"run_image,omitempty"`
 	BootCommand   string            `yaml:"boot_command,omitempty"`
@@ -140,6 +141,10 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 		return nil, errors.New("no base image specified in config, set base image with `base_image: {imagename}`")
 	}
 
+	if config.BaseImageSlim == "" {
+		config.BaseImageSlim = config.BaseImage
+	}
+
 	return config, nil
 }
 
@@ -159,13 +164,14 @@ func (config *Config) Yaml() string {
 	return strings.Join(config.rawYaml, "_FILE_SEPERATOR_")
 }
 
-func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, mountVolumes bool, configFile string) string {
+func (config *Config) Dockerfile(bakeEnv bool, mountVolumes bool, configFile string) string {
 	if configFile == "" {
 		configFile = "config.yaml"
 	}
 	builder := strings.Builder{}
 	builder.WriteString("ARG dockerfile_from_image=" + config.BaseImage + "\n")
-	builder.WriteString("FROM ${dockerfile_from_image}\n")
+	builder.WriteString("ARG dockerfile_from_image_slim=" + config.BaseImageSlim + "\n")
+	builder.WriteString("FROM ${dockerfile_from_image} AS discourse-full\n")
 	builder.WriteString(config.dockerfileArgs() + "\n")
 	if bakeEnv {
 		builder.WriteString(config.dockerfileEnvs() + "\n")
@@ -186,9 +192,45 @@ func (config *Config) Dockerfile(pupsArgs string, bakeEnv bool, mountVolumes boo
 		}
 	}
 	builder.WriteString(
-		"cat /temp-config.yaml | /usr/local/bin/pups " + pupsArgs + " --stdin " +
+		"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin " +
 			"&& rm /temp-config.yaml\n")
-	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]")
+
+	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]\n")
+	builder.WriteString("\n")
+	builder.WriteString("FROM discourse-full AS discourse-builder\n")
+	builder.WriteString(config.dockerfileArgs() + "\n")
+	builder.WriteString("RUN GIT_HASH=$(sudo -u discourse git -C /var/www/discourse rev-parse HEAD) &&\\\n")
+	builder.WriteString("FULL_VERSION=$(sudo -u discourse git -C /var/www/discourse describe --dirty --match \"v[0-9]*\" 2> /dev/null) &&\\\n")
+	builder.WriteString("GIT_BRANCH=$(sudo -u discourse git -C /var/www/discourse branch --show-current) &&\\\n")
+	builder.WriteString("printf '{\"git_version\":\"%s\", \"full_version\":\"%s\",\"git_branch\":\"%s\"}' \"${GIT_HASH}\" \"${FULL_VERSION}\" \"${GIT_BRANCH}\" > /var/www/discourse/config/git-utils-overrides.json\n")
+
+	builder.WriteString("\n")
+	builder.WriteString("FROM ${dockerfile_from_image_slim} AS discourse-slim\n")
+	builder.WriteString(config.dockerfileArgs() + "\n")
+	if bakeEnv {
+		builder.WriteString(config.dockerfileEnvs() + "\n")
+	} else {
+		builder.WriteString(config.dockerfileDefaultEnvs() + "\n")
+	}
+	builder.WriteString(config.dockerfileExpose() + "\n")
+	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules /var/www/discourse/ /var/www/discourse\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/tmp/asset-processor /var/www/discourse/tmp/asset-processor\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/moment.js /var/www/discourse/frontend/discourse/node_modules/moment/moment.js\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/ /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/locale /var/www/discourse/frontend/discourse/node_modules/moment/locale\n")
+	builder.WriteString("RUN ")
+	builder.WriteString(
+		"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=build,precompile,migrate,db --stdin " +
+			"&& rm /temp-config.yaml\n")
+	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]\n")
+
 	return builder.String()
 }
 

@@ -21,6 +21,7 @@ import (
 type DockerBuildCmd struct {
 	BakeEnv      bool     `short:"e" help:"Bake in the configured environment to image after build."`
 	MountVolumes bool     `short:"v" hidden:"" help:"mount volume at build time. No data to the host is written by this."`
+	Slim         bool     `help:"Build a slim image"`
 	Tag          string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
 	Config       string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
 	ExtraFlags   []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
@@ -44,10 +45,9 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 		return err
 	}
 
-	pupsArgs := "--skip-tags=precompile,migrate,db"
 	builder := docker.DockerBuilder{
 		Config:       config,
-		Stdin:        strings.NewReader(config.Dockerfile(pupsArgs, r.BakeEnv, r.MountVolumes, configFile)),
+		Stdin:        strings.NewReader(config.Dockerfile(r.BakeEnv, r.MountVolumes, configFile)),
 		Dir:          dir,
 		ImageTag:     r.Tag,
 		ExtraFlags:   r.ExtraFlags,
