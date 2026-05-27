@@ -214,9 +214,13 @@ func (config *Config) Dockerfile(bakeEnv bool, mountVolumes bool, configFile str
 	}
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
+	// copy full build
 	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules /var/www/discourse/ /var/www/discourse\n")
+	// copy pnpm lock, used for calculating asset processor
 	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
+	// copy cached asset processor
 	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/tmp/asset-processor /var/www/discourse/tmp/asset-processor\n")
+	//copy runtime-dependent node_modules
 	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js\n")
 	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js\n")
 	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js\n")

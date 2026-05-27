@@ -41,7 +41,7 @@ var _ = Describe("Config", func() {
 
 	It("can convert pups config to dockerfile format and bake in default env", func() {
 		dockerfile := conf.Dockerfile(false, false, "config.yaml")
-		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
+		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE
 ARG LC_ALL
@@ -63,13 +63,13 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
+RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 	})
 
 	It("can generate a dockerfile with all env baked into the image", func() {
 		dockerfile := conf.Dockerfile(true, false, "config.yaml")
-		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
+		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE
 ARG LC_ALL
@@ -96,13 +96,13 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
+RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 	})
 
 	It("can generate a dockerfile that includes volume mounts", func() {
 		dockerfile := conf.Dockerfile(false, true, "config.yaml")
-		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
+		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE
 ARG LC_ALL
@@ -124,7 +124,7 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-RUN --mount=type=bind,from=volume_0,source=/,target=/shared,rw=true --mount=type=bind,from=volume_1,source=/,target=/var/log,rw=true cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
+RUN --mount=type=bind,from=volume_0,source=/,target=/shared,rw=true --mount=type=bind,from=volume_1,source=/,target=/var/log,rw=true cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 	})
 
