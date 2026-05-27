@@ -215,7 +215,7 @@ func (config *Config) Dockerfile(bakeEnv bool, mountVolumes bool, configFile str
 	builder.WriteString(config.dockerfileExpose() + "\n")
 	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
 	// copy full build
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules /var/www/discourse/ /var/www/discourse\n")
+	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse\n")
 	// copy pnpm lock, used for calculating asset processor
 	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
 	// copy cached asset processor
