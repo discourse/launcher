@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"dario.cat/mergo"
@@ -164,7 +163,7 @@ func (config *Config) Yaml() string {
 	return strings.Join(config.rawYaml, "_FILE_SEPERATOR_")
 }
 
-func (config *Config) Dockerfile(bakeEnv bool, mountVolumes bool, configFile string) string {
+func (config *Config) Dockerfile(bakeEnv bool, configFile string) string {
 	if configFile == "" {
 		configFile = "config.yaml"
 	}
@@ -183,14 +182,6 @@ func (config *Config) Dockerfile(bakeEnv bool, mountVolumes bool, configFile str
 
 	builder.WriteString("RUN ")
 
-	// add mounts if any volumes exist and make it available on build time.
-	// they won't be modifiable at build time, but this allows any cached data
-	// to be made available to the builder
-	if mountVolumes {
-		for i, v := range config.Volumes {
-			builder.WriteString("--mount=type=bind,from=volume_" + strconv.Itoa(i) + ",source=/,target=" + v.Volume.Guest + ",rw=true ")
-		}
-	}
 	builder.WriteString(
 		"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin " +
 			"&& rm /temp-config.yaml\n")

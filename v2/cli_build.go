@@ -20,7 +20,6 @@ import (
  */
 type DockerBuildCmd struct {
 	BakeEnv      bool     `short:"e" help:"Bake in the configured environment to image after build."`
-	MountVolumes bool     `short:"v" hidden:"" help:"mount volume at build time. No data to the host is written by this."`
 	Slim         bool     `help:"Build a slim image"`
 	Tag          string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
 	Config       string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
@@ -47,11 +46,10 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 
 	builder := docker.DockerBuilder{
 		Config:       config,
-		Stdin:        strings.NewReader(config.Dockerfile(r.BakeEnv, r.MountVolumes, configFile)),
+		Stdin:        strings.NewReader(config.Dockerfile(r.BakeEnv, configFile)),
 		Dir:          dir,
 		ImageTag:     r.Tag,
 		ExtraFlags:   r.ExtraFlags,
-		MountVolumes: r.MountVolumes,
 	}
 	if err := builder.Run(ctx); err != nil {
 		if configErr := config.ValidateConfig(err); configErr != nil {
@@ -147,7 +145,6 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 type DockerBootstrapCmd struct {
 	Config       string `arg:"" name:"config" help:"config" predictor:"config"`
 	Tag          string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	MountVolumes bool   `short:"v" hidden:"" help:"mount volumes at build time. No data to the host is written by this."`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
@@ -155,7 +152,7 @@ func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
-	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, MountVolumes: r.MountVolumes, Tag: tag}
+	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, Tag: tag}
 	migrateStep := DockerMigrateCmd{Config: r.Config, Tag: tag}
 	configureStep := DockerConfigureCmd{Config: r.Config, SourceTag: tag, TargetTag: tag}
 	if err := buildStep.Run(cli, ctx); err != nil {
