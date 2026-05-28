@@ -20,7 +20,7 @@ import (
  */
 type DockerBuildCmd struct {
 	BakeEnv    bool     `short:"e" help:"Bake in the configured environment to image after build."`
-	BuildSlim  bool     `help:"Build a minimal image from a multistage build"`
+	BuildSlim  bool     `hidden:"" help:"Build a minimal image from a multistage build"`
 	Tag        string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
 	Config     string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
 	ExtraFlags []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
