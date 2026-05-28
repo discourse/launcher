@@ -66,6 +66,7 @@ COPY config.yaml /temp-config.yaml
 RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
 
+		Expect(dockerfile).ToNot(ContainSubstring(`discourse-builder`))
 		Expect(dockerfile).ToNot(ContainSubstring(`discourse-slim`))
 	})
 
@@ -100,6 +101,7 @@ EXPOSE 90
 COPY config.yaml /temp-config.yaml
 RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
+		Expect(dockerfile).ToNot(ContainSubstring(`discourse-builder`))
 		Expect(dockerfile).ToNot(ContainSubstring(`discourse-slim`))
 	})
 
