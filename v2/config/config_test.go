@@ -144,7 +144,6 @@ ARG RUBY_GC_HEAP_INIT_SLOTS
 ARG RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
 ARG UNICORN_SIDEKIQS
 ARG UNICORN_WORKERS
-RUN su discourse -c 'SKIP_DB_AND_REDIS=1 bundle exec rails r "AssetProcessor.ember_version"'
 RUN GIT_HASH=$(sudo -u discourse git -C /var/www/discourse rev-parse HEAD) &&\
 FULL_VERSION=$(sudo -u discourse git -C /var/www/discourse describe --dirty --match "v[0-9]*" 2> /dev/null) &&\
 GIT_BRANCH=$(sudo -u discourse git -C /var/www/discourse branch --show-current) &&\
