@@ -17,11 +17,11 @@ import (
 )
 
 type DockerBuilder struct {
-	Config       *config.Config
-	Stdin        io.Reader
-	Dir          string
-	ImageTag     string
-	ExtraFlags   []string
+	Config     *config.Config
+	Stdin      io.Reader
+	Dir        string
+	ImageTag   string
+	ExtraFlags []string
 }
 
 func (r *DockerBuilder) Run(ctx context.Context) error {
