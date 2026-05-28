@@ -40,7 +40,7 @@ var _ = Describe("Config", func() {
 	})
 
 	It("can convert pups config to dockerfile format and bake in default env", func() {
-		dockerfile := conf.Dockerfile(false, "config.yaml")
+		dockerfile := conf.Dockerfile(false, false, "config.yaml")
 		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE
@@ -68,7 +68,7 @@ CMD ["/sbin/boot"]`))
 	})
 
 	It("can generate a dockerfile with all env baked into the image", func() {
-		dockerfile := conf.Dockerfile(true, "config.yaml")
+		dockerfile := conf.Dockerfile(true, false, "config.yaml")
 		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE

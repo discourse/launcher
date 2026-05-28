@@ -19,11 +19,11 @@ import (
  * bootstrap
  */
 type DockerBuildCmd struct {
-	BakeEnv      bool     `short:"e" help:"Bake in the configured environment to image after build."`
-	Slim         bool     `help:"Build a slim image"`
-	Tag          string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	Config       string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
-	ExtraFlags   []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
+	BakeEnv    bool     `short:"e" help:"Bake in the configured environment to image after build."`
+	BuildSlim  bool     `help:"Build a minimal image from a multistage build"`
+	Tag        string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	Config     string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
+	ExtraFlags []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
 }
 
 func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
@@ -45,11 +45,11 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 	}
 
 	builder := docker.DockerBuilder{
-		Config:       config,
-		Stdin:        strings.NewReader(config.Dockerfile(r.BakeEnv, configFile)),
-		Dir:          dir,
-		ImageTag:     r.Tag,
-		ExtraFlags:   r.ExtraFlags,
+		Config:     config,
+		Stdin:      strings.NewReader(config.Dockerfile(r.BakeEnv, r.BuildSlim, configFile)),
+		Dir:        dir,
+		ImageTag:   r.Tag,
+		ExtraFlags: r.ExtraFlags,
 	}
 	if err := builder.Run(ctx); err != nil {
 		if configErr := config.ValidateConfig(err); configErr != nil {
@@ -143,8 +143,8 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerBootstrapCmd struct {
-	Config       string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag          string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	Config string `arg:"" name:"config" help:"config" predictor:"config"`
+	Tag    string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {

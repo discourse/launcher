@@ -163,7 +163,7 @@ func (config *Config) Yaml() string {
 	return strings.Join(config.rawYaml, "_FILE_SEPERATOR_")
 }
 
-func (config *Config) Dockerfile(bakeEnv bool, configFile string) string {
+func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string) string {
 	if configFile == "" {
 		configFile = "config.yaml"
 	}
@@ -185,46 +185,48 @@ func (config *Config) Dockerfile(bakeEnv bool, configFile string) string {
 	builder.WriteString(
 		"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin " +
 			"&& rm /temp-config.yaml\n")
-
 	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]\n")
-	builder.WriteString("\n")
-	builder.WriteString("FROM discourse-full AS discourse-builder\n")
-	builder.WriteString(config.dockerfileArgs() + "\n")
-	builder.WriteString("RUN GIT_HASH=$(sudo -u discourse git -C /var/www/discourse rev-parse HEAD) &&\\\n")
-	builder.WriteString("FULL_VERSION=$(sudo -u discourse git -C /var/www/discourse describe --dirty --match \"v[0-9]*\" 2> /dev/null) &&\\\n")
-	builder.WriteString("GIT_BRANCH=$(sudo -u discourse git -C /var/www/discourse branch --show-current) &&\\\n")
-	builder.WriteString("printf '{\"git_version\":\"%s\", \"full_version\":\"%s\",\"git_branch\":\"%s\"}' \"${GIT_HASH}\" \"${FULL_VERSION}\" \"${GIT_BRANCH}\" > /var/www/discourse/config/git-utils-overrides.json\n")
 
-	builder.WriteString("\n")
-	builder.WriteString("FROM ${dockerfile_from_image_slim} AS discourse-slim\n")
-	builder.WriteString(config.dockerfileArgs() + "\n")
-	if bakeEnv {
-		builder.WriteString(config.dockerfileEnvs() + "\n")
-	} else {
-		builder.WriteString(config.dockerfileDefaultEnvs() + "\n")
+	if buildSlim {
+		builder.WriteString("\n")
+		builder.WriteString("FROM discourse-full AS discourse-builder\n")
+		builder.WriteString(config.dockerfileArgs() + "\n")
+		builder.WriteString("RUN GIT_HASH=$(sudo -u discourse git -C /var/www/discourse rev-parse HEAD) &&\\\n")
+		builder.WriteString("FULL_VERSION=$(sudo -u discourse git -C /var/www/discourse describe --dirty --match \"v[0-9]*\" 2> /dev/null) &&\\\n")
+		builder.WriteString("GIT_BRANCH=$(sudo -u discourse git -C /var/www/discourse branch --show-current) &&\\\n")
+		builder.WriteString("printf '{\"git_version\":\"%s\", \"full_version\":\"%s\",\"git_branch\":\"%s\"}' \"${GIT_HASH}\" \"${FULL_VERSION}\" \"${GIT_BRANCH}\" > /var/www/discourse/config/git-utils-overrides.json\n")
+
+		builder.WriteString("\n")
+		builder.WriteString("FROM ${dockerfile_from_image_slim} AS discourse-slim\n")
+		builder.WriteString(config.dockerfileArgs() + "\n")
+		if bakeEnv {
+			builder.WriteString(config.dockerfileEnvs() + "\n")
+		} else {
+			builder.WriteString(config.dockerfileDefaultEnvs() + "\n")
+		}
+		builder.WriteString(config.dockerfileExpose() + "\n")
+		builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
+		// copy full build
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse\n")
+		// copy pnpm lock, used for calculating asset processor
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
+		// copy cached asset processor
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/tmp/asset-processor /var/www/discourse/tmp/asset-processor\n")
+		//copy runtime-dependent node_modules
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/moment.js /var/www/discourse/frontend/discourse/node_modules/moment/moment.js\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/ /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/locale /var/www/discourse/frontend/discourse/node_modules/moment/locale\n")
+		builder.WriteString("RUN ")
+		builder.WriteString(
+			"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=build,precompile,migrate,db --stdin " +
+				"&& rm /temp-config.yaml\n")
+		builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]\n")
 	}
-	builder.WriteString(config.dockerfileExpose() + "\n")
-	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
-	// copy full build
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse\n")
-	// copy pnpm lock, used for calculating asset processor
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
-	// copy cached asset processor
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/tmp/asset-processor /var/www/discourse/tmp/asset-processor\n")
-	//copy runtime-dependent node_modules
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js\n")
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js\n")
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js\n")
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/moment.js /var/www/discourse/frontend/discourse/node_modules/moment/moment.js\n")
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js\n")
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/ /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/\n")
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales\n")
-	builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/locale /var/www/discourse/frontend/discourse/node_modules/moment/locale\n")
-	builder.WriteString("RUN ")
-	builder.WriteString(
-		"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=build,precompile,migrate,db --stdin " +
-			"&& rm /temp-config.yaml\n")
-	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]\n")
 
 	return builder.String()
 }
