@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,12 +17,11 @@ import (
 )
 
 type DockerBuilder struct {
-	Config       *config.Config
-	Stdin        io.Reader
-	Dir          string
-	ImageTag     string
-	ExtraFlags   []string
-	MountVolumes bool
+	Config     *config.Config
+	Stdin      io.Reader
+	Dir        string
+	ImageTag   string
+	ExtraFlags []string
 }
 
 func (r *DockerBuilder) Run(ctx context.Context) error {
@@ -56,13 +54,6 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 		cmd.Args = append(cmd.Args, r.ImageTag)
 	}
 	cmd.Args = append(cmd.Args, "--shm-size=512m")
-
-	if r.MountVolumes {
-		for i, v := range r.Config.Volumes {
-			cmd.Args = append(cmd.Args, "--build-context")
-			cmd.Args = append(cmd.Args, "volume_"+strconv.Itoa(i)+"="+v.Volume.Host)
-		}
-	}
 
 	cmd.Args = append(cmd.Args, r.ExtraFlags...)
 	cmd.Args = append(cmd.Args, "-f")

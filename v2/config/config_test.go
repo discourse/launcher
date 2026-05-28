@@ -40,8 +40,8 @@ var _ = Describe("Config", func() {
 	})
 
 	It("can convert pups config to dockerfile format and bake in default env", func() {
-		dockerfile := conf.Dockerfile("", false, false, "config.yaml")
-		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
+		dockerfile := conf.Dockerfile(false, false, "config.yaml")
+		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE
 ARG LC_ALL
@@ -63,13 +63,16 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
+RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
+
+		Expect(dockerfile).ToNot(ContainSubstring(`discourse-builder`))
+		Expect(dockerfile).ToNot(ContainSubstring(`discourse-slim`))
 	})
 
 	It("can generate a dockerfile with all env baked into the image", func() {
-		dockerfile := conf.Dockerfile("", true, false, "config.yaml")
-		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
+		dockerfile := conf.Dockerfile(true, false, "config.yaml")
+		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE
 ARG LC_ALL
@@ -96,13 +99,15 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
+RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
 CMD ["/sbin/boot"]`))
+		Expect(dockerfile).ToNot(ContainSubstring(`discourse-builder`))
+		Expect(dockerfile).ToNot(ContainSubstring(`discourse-slim`))
 	})
 
-	It("can generate a dockerfile that includes volume mounts", func() {
-		dockerfile := conf.Dockerfile("", false, true, "config.yaml")
-		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image}
+	It("can generate configuration for a slim image from a multistage build", func() {
+		dockerfile := conf.Dockerfile(false, true, "config.yaml")
+		Expect(dockerfile).To(ContainSubstring(`FROM ${dockerfile_from_image} AS discourse-full
 ARG LANG
 ARG LANGUAGE
 ARG LC_ALL
@@ -124,8 +129,49 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY config.yaml /temp-config.yaml
-RUN --mount=type=bind,from=volume_0,source=/,target=/shared,rw=true --mount=type=bind,from=volume_1,source=/,target=/var/log,rw=true cat /temp-config.yaml | /usr/local/bin/pups  --stdin && rm /temp-config.yaml
-CMD ["/sbin/boot"]`))
+RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
+CMD ["/sbin/boot"]
+
+FROM discourse-full AS discourse-builder
+ARG LANG
+ARG LANGUAGE
+ARG LC_ALL
+ARG MULTI
+ARG RAILS_ENV
+ARG REPLACED
+ARG RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+ARG RUBY_GC_HEAP_INIT_SLOTS
+ARG RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+ARG UNICORN_SIDEKIQS
+ARG UNICORN_WORKERS
+RUN GIT_HASH=$(sudo -u discourse git -C /var/www/discourse rev-parse HEAD) &&\
+FULL_VERSION=$(sudo -u discourse git -C /var/www/discourse describe --dirty --match "v[0-9]*" 2> /dev/null) &&\
+GIT_BRANCH=$(sudo -u discourse git -C /var/www/discourse branch --show-current) &&\
+printf '{"git_version":"%s", "full_version":"%s","git_branch":"%s"}' "${GIT_HASH}" "${FULL_VERSION}" "${GIT_BRANCH}" > /var/www/discourse/config/git-utils-overrides.json
+
+FROM ${dockerfile_from_image_slim} AS discourse-slim
+ARG LANG
+ARG LANGUAGE
+ARG LC_ALL
+ARG MULTI
+ARG RAILS_ENV
+ARG REPLACED
+ARG RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+ARG RUBY_GC_HEAP_INIT_SLOTS
+ARG RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+ARG UNICORN_SIDEKIQS
+ARG UNICORN_WORKERS
+ENV RAILS_ENV=${RAILS_ENV}
+ENV RUBY_GC_HEAP_GROWTH_MAX_SLOTS=${RUBY_GC_HEAP_GROWTH_MAX_SLOTS}
+ENV RUBY_GC_HEAP_INIT_SLOTS=${RUBY_GC_HEAP_INIT_SLOTS}
+ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=${RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR}
+ENV UNICORN_SIDEKIQS=${UNICORN_SIDEKIQS}
+ENV UNICORN_WORKERS=${UNICORN_WORKERS}
+EXPOSE 443
+EXPOSE 80
+EXPOSE 90
+COPY config.yaml /temp-config.yaml
+COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse`))
 	})
 
 	Context("hostname tests", func() {
