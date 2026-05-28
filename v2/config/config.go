@@ -192,7 +192,7 @@ func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string
 		builder.WriteString("FROM discourse-full AS discourse-builder\n")
 		builder.WriteString(config.dockerfileArgs() + "\n")
 		// Cache asset processor
-		builder.WriteString(`RUN su discourse -c 'SKIP_DB_AND_REDIS=1 bundle exec rails r "AssetProcessor.ember_version"'`)
+		builder.WriteString("RUN su discourse -c 'SKIP_DB_AND_REDIS=1 bundle exec rails r \"AssetProcessor.ember_version\"'\n")
 		// Cache discourse versions
 		builder.WriteString("RUN GIT_HASH=$(sudo -u discourse git -C /var/www/discourse rev-parse HEAD) &&\\\n")
 		builder.WriteString("FULL_VERSION=$(sudo -u discourse git -C /var/www/discourse describe --dirty --match \"v[0-9]*\" 2> /dev/null) &&\\\n")
