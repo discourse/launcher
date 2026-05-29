@@ -145,6 +145,7 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 type DockerBootstrapCmd struct {
 	Config string `arg:"" name:"config" help:"config" predictor:"config"`
 	Tag    string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	BuildSlim  bool     `hidden:"" help:"Build a minimal image from a multistage build"`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
@@ -152,7 +153,7 @@ func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
-	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, Tag: tag}
+	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, Tag: tag, BuildSlim: r.BuildSlim}
 	migrateStep := DockerMigrateCmd{Config: r.Config, Tag: tag}
 	configureStep := DockerConfigureCmd{Config: r.Config, SourceTag: tag, TargetTag: tag}
 	if err := buildStep.Run(cli, ctx); err != nil {
