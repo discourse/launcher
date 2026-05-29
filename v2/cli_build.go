@@ -143,9 +143,9 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerBootstrapCmd struct {
-	Config string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag    string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	BuildSlim  bool     `hidden:"" help:"Build a minimal image from a multistage build"`
+	Config    string `arg:"" name:"config" help:"config" predictor:"config"`
+	Tag       string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	BuildSlim bool   `hidden:"" help:"Build a minimal image from a multistage build"`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
