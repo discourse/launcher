@@ -6,7 +6,6 @@ import (
 
 	"errors"
 	"os"
-	"strings"
 
 	"github.com/discourse/launcher/v2/config"
 )
