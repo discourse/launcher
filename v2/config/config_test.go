@@ -6,7 +6,6 @@ import (
 
 	"errors"
 	"os"
-	"strings"
 
 	"github.com/discourse/launcher/v2/config"
 )
@@ -35,8 +34,15 @@ var _ = Describe("Config", func() {
 		Expect(err).To(BeNil())
 		out, err := os.ReadFile(testDir + "/config.yaml")
 		Expect(err).To(BeNil())
-		Expect(strings.Contains(string(out[:]), ""))
 		Expect(string(out[:])).To(ContainSubstring("DISCOURSE_DEVELOPER_EMAILS: 'me@example.com,you@example.com'"))
+	})
+
+	It("appends {{config}} replaced env values to the raw yaml config", func() {
+		err := conf.WriteYamlConfig(testDir, "config.yaml")
+		Expect(err).To(BeNil())
+		out, err := os.ReadFile(testDir + "/config.yaml")
+		Expect(err).To(BeNil())
+		Expect(string(out[:])).To(ContainSubstring("REPLACED: test/test/test"))
 	})
 
 	It("can convert pups config to dockerfile format and bake in default env", func() {

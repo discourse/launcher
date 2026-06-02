@@ -136,6 +136,16 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 		config.Env[k] = val
 	}
 
+	// Append env to final raw yaml to replace {{config}} entries
+	// This allows pups to also get the properly replaced {{config}} values
+	// as pups does not do any replacement on its own.
+	// Appending env ensures last write wins.
+	envStr, err := yaml.Marshal(Config{Env: config.Env})
+	if err != nil {
+		return nil, err
+	}
+	config.rawYaml = append(config.rawYaml, string(envStr))
+
 	if config.BaseImage == "" {
 		return nil, errors.New("no base image specified in config, set base image with `base_image: {imagename}`")
 	}
