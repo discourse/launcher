@@ -35,7 +35,6 @@ var _ = Describe("Config", func() {
 		Expect(err).To(BeNil())
 		out, err := os.ReadFile(testDir + "/config.yaml")
 		Expect(err).To(BeNil())
-		Expect(strings.Contains(string(out[:]), ""))
 		Expect(string(out[:])).To(ContainSubstring("DISCOURSE_DEVELOPER_EMAILS: 'me@example.com,you@example.com'"))
 	})
 
@@ -44,7 +43,6 @@ var _ = Describe("Config", func() {
 		Expect(err).To(BeNil())
 		out, err := os.ReadFile(testDir + "/config.yaml")
 		Expect(err).To(BeNil())
-		Expect(strings.Contains(string(out[:]), ""))
 		Expect(string(out[:])).To(ContainSubstring("REPLACED: test/test/test"))
 	})
 
