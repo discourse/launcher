@@ -33,7 +33,7 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 	if r.ImageTag == "" {
 		r.ImageTag = utils.DefaultNamespace + "/" + r.Config.Name
 	}
-	cmd := exec.CommandContext(ctx, utils.DockerPath, "build")
+	cmd := exec.CommandContext(ctx, utils.DockerPath, "buildx", "build")
 	TimeoutDockerBuild(cmd)
 	cmd.Dir = r.Dir
 	cmd.Env = os.Environ()
