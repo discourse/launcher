@@ -39,6 +39,7 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 	cmd.Env = os.Environ()
 	env := r.Config.GetEnvSlice(false)
 	cmd.Env = append(cmd.Env, env...)
+	cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=plain")
 	for k := range r.Config.Env {
 		if !slices.Contains(utils.KnownSecrets, k) {
