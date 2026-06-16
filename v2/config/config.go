@@ -283,22 +283,28 @@ func (config *Config) dockerfileEnvs() string {
 	builder := []string{}
 	for k := range config.Env {
 		if !slices.Contains(utils.KnownSecrets, k) {
-			builder = append(builder, "ENV "+k+"=${"+k+"}")
+			builder = append(builder, k+"=${"+k+"}")
 		}
 	}
 	slices.Sort(builder)
-	return strings.Join(builder, "\n")
+	if len(builder) == 0 {
+		return ""
+	}
+	return "ENV " + strings.Join(builder, " \\\n    ")
 }
 
 func (config *Config) dockerfileDefaultEnvs() string {
 	builder := []string{}
 	for k := range config.Env {
 		if slices.Contains(defaultBakeEnv, k) {
-			builder = append(builder, "ENV "+k+"=${"+k+"}")
+			builder = append(builder, k+"=${"+k+"}")
 		}
 	}
 	slices.Sort(builder)
-	return strings.Join(builder, "\n")
+	if len(builder) == 0 {
+		return ""
+	}
+	return "ENV " + strings.Join(builder, " \\\n    ")
 }
 
 func (config *Config) dockerfileArgs() string {
