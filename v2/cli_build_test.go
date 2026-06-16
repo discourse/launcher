@@ -65,7 +65,6 @@ var _ = Describe("Build", func() {
 		var checkMigrateCmd = func(cmd exec.Cmd, tag string) {
 			Expect(cmd.String()).To(ContainSubstring("docker run"))
 			Expect(cmd.String()).To(ContainSubstring("--env DISCOURSE_DEVELOPER_EMAILS"))
-			Expect(cmd.String()).To(ContainSubstring("--env SKIP_EMBER_CLI_COMPILE=1"))
 			// no commit after, we expect an --rm as the container isn't needed after it is stopped
 			Expect(cmd.String()).To(ContainSubstring("--rm"))
 			Expect(cmd.Env).To(ContainElement("DISCOURSE_DB_PASSWORD=SOME_SECRET"))
@@ -100,7 +99,6 @@ var _ = Describe("Build", func() {
 					"--env RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR " +
 					"--env UNICORN_SIDEKIQS " +
 					"--env UNICORN_WORKERS " +
-					"--env SKIP_EMBER_CLI_COMPILE=1 " +
 					"--volume /var/discourse/shared/web-only:/shared " +
 					"--volume /var/discourse/shared/web-only/log/var-log:/var/log " +
 					"--link data:data " +
@@ -264,7 +262,6 @@ var _ = Describe("Build", func() {
 			Expect(cmd.String()).To(ContainSubstring("docker run"))
 			Expect(cmd.String()).To(ContainSubstring("--env DISCOURSE_DEVELOPER_EMAILS"))
 			Expect(cmd.String()).To(ContainSubstring("--env SKIP_POST_DEPLOYMENT_MIGRATIONS=1"))
-			Expect(cmd.String()).To(ContainSubstring("--env SKIP_EMBER_CLI_COMPILE=1"))
 			// no commit after, we expect an --rm as the container isn't needed after it is stopped
 			Expect(cmd.String()).To(ContainSubstring("--rm"))
 			Expect(cmd.Env).To(ContainElement("DISCOURSE_DB_PASSWORD=SOME_SECRET"))
