@@ -68,8 +68,7 @@ ENV RAILS_ENV=${RAILS_ENV} \
 EXPOSE 443
 EXPOSE 80
 EXPOSE 90
-COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
+RUN --mount=type=bind,source=config.yaml,target=/temp-config.yaml cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin
 CMD ["/sbin/boot"]`))
 
 		Expect(dockerfile).ToNot(ContainSubstring(`discourse-builder`))
@@ -104,8 +103,7 @@ ENV LANG=${LANG} \
 EXPOSE 443
 EXPOSE 80
 EXPOSE 90
-COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
+RUN --mount=type=bind,source=config.yaml,target=/temp-config.yaml cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin
 CMD ["/sbin/boot"]`))
 		Expect(dockerfile).ToNot(ContainSubstring(`discourse-builder`))
 		Expect(dockerfile).ToNot(ContainSubstring(`discourse-slim`))
@@ -134,8 +132,7 @@ ENV RAILS_ENV=${RAILS_ENV} \
 EXPOSE 443
 EXPOSE 80
 EXPOSE 90
-COPY config.yaml /temp-config.yaml
-RUN cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin && rm /temp-config.yaml
+RUN --mount=type=bind,source=config.yaml,target=/temp-config.yaml cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin
 CMD ["/sbin/boot"]
 
 FROM discourse-full AS discourse-builder
@@ -176,7 +173,6 @@ ENV RAILS_ENV=${RAILS_ENV} \
 EXPOSE 443
 EXPOSE 80
 EXPOSE 90
-COPY config.yaml /temp-config.yaml
 COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse`))
 	})
 

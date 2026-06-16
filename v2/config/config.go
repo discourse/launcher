@@ -188,13 +188,9 @@ func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string
 		builder.WriteString(config.dockerfileDefaultEnvs() + "\n")
 	}
 	builder.WriteString(config.dockerfileExpose() + "\n")
-	builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
-
-	builder.WriteString("RUN ")
-
+	builder.WriteString("RUN --mount=type=bind,source=" + configFile + ",target=/temp-config.yaml ")
 	builder.WriteString(
-		"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin " +
-			"&& rm /temp-config.yaml\n")
+		"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=precompile,migrate,db --stdin\n")
 	builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]\n")
 
 	if buildSlim {
@@ -216,7 +212,6 @@ func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string
 			builder.WriteString(config.dockerfileDefaultEnvs() + "\n")
 		}
 		builder.WriteString(config.dockerfileExpose() + "\n")
-		builder.WriteString("COPY " + configFile + " /temp-config.yaml\n")
 		// copy full build
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse\n")
 		// copy pnpm lock, used for calculating asset processor
@@ -232,10 +227,9 @@ func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/ /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/\n")
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales\n")
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/locale /var/www/discourse/frontend/discourse/node_modules/moment/locale\n")
-		builder.WriteString("RUN ")
+		builder.WriteString("RUN --mount=type=bind,source=" + configFile + ",target=/temp-config.yaml ")
 		builder.WriteString(
-			"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=build,precompile,migrate,db --stdin " +
-				"&& rm /temp-config.yaml\n")
+			"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=build,precompile,migrate,db --stdin\n")
 		builder.WriteString("CMD [\"" + config.GetBootCommand() + "\"]\n")
 	}
 

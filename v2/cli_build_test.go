@@ -53,7 +53,7 @@ var _ = Describe("Build", func() {
 			buf := new(strings.Builder)
 			io.Copy(buf, cmd.Stdin) //nolint:errcheck
 			// docker build's stdin is a dockerfile
-			Expect(buf.String()).To(ContainSubstring("COPY config.yaml /temp-config.yaml"))
+			Expect(buf.String()).To(ContainSubstring("RUN --mount=type=bind,source=config.yaml,target=/temp-config.yaml"))
 			Expect(buf.String()).To(ContainSubstring("--skip-tags=precompile,migrate,db"))
 			Expect(buf.String()).ToNot(ContainSubstring("SKIP_EMBER_CLI_COMPILE=1"))
 
