@@ -1,0 +1,116 @@
+name: smoke-test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ">=1.22.0"
+      - name: Build launcher
+        working-directory: ./v2
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+          GOARCH: amd64
+        run: go build -o bin/launcher
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-linux-amd64
+          path: v2/bin/launcher
+          if-no-files-found: error
+
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Debian 12 (bookworm)
+            image: debian:bookworm
+          - name: Debian 13 (trixie)
+            image: debian:trixie
+    name: smoke-test (${{ matrix.name }})
+    container:
+      image: ${{ matrix.image }}
+      options: --privileged -v /mnt/docker-data:/var/lib/docker
+    steps:
+      - name: Install Debian docker.io and tools
+        run: |
+          apt-get update
+          apt-get install -y docker.io git ca-certificates curl
+      - name: Start dockerd
+        run: |
+          # GitHub bind-mounts the host docker socket here; free it so our daemon owns the default socket
+          umount /var/run/docker.sock 2>/dev/null || true
+          rm -f /var/run/docker.sock
+          dockerd >/tmp/dockerd.log 2>&1 &
+          for i in $(seq 1 60); do
+            docker info >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker version
+          docker info
+      - uses: actions/download-artifact@v4
+        with:
+          name: launcher-linux-amd64
+          path: /tmp/launcher-bin
+      - name: Clone discourse_docker
+        run: git clone --depth 1 https://github.com/discourse/discourse_docker.git /discourse_docker
+      - name: Install launcher2
+        run: |
+          install -m 0755 /tmp/launcher-bin/launcher /usr/local/bin/launcher2
+          launcher2 --version
+      - name: Seed app.yml from standalone sample
+        working-directory: /discourse_docker
+        run: |
+          cp samples/standalone.yml containers/app.yml
+          sed -i 's|DISCOURSE_HOSTNAME: .*|DISCOURSE_HOSTNAME: "smoke-test.example.com"|' containers/app.yml
+          sed -i 's|DISCOURSE_DEVELOPER_EMAILS: .*|DISCOURSE_DEVELOPER_EMAILS: "ci@example.com"|' containers/app.yml
+          sed -i 's|#DISCOURSE_SKIP_EMAIL_SETUP: "1".*|DISCOURSE_SKIP_EMAIL_SETUP: "1"|' containers/app.yml
+      # Workaround: bootstrapping a brand-new site with launcher2 never creates these in the volume,
+      # since the build-time hooks write them into the image's /shared, which the empty volume then shadows.
+      - name: Seed shared volume directories
+        run: |
+          mkdir -p /var/discourse/shared/standalone/uploads \
+                   /var/discourse/shared/standalone/backups \
+                   /var/discourse/shared/standalone/log/rails \
+                   /var/discourse/shared/standalone/log/var-log
+          chmod -R 777 /var/discourse/shared/standalone
+      - name: Bootstrap
+        working-directory: /discourse_docker
+        run: launcher2 bootstrap app
+      - name: Start
+        working-directory: /discourse_docker
+        run: launcher2 start app
+      - name: Wait for site to come online
+        timeout-minutes: 2
+        run: |
+          while true; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/srv/status || true)
+            echo "HTTP $code"
+            case "$code" in 2??) echo "site is online"; exit 0;; esac
+            sleep 5
+          done
+      - name: site logs
+        if: failure()
+        working-directory: /discourse_docker
+        run: launcher2 logs app || true
+      - name: dockerd log
+        if: failure()
+        run: cat /tmp/dockerd.log
