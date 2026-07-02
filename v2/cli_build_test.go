@@ -41,7 +41,7 @@ var _ = Describe("Build", func() {
 
 	Context("When running build commands", func() {
 		var checkBuildCmd = func(cmd exec.Cmd) {
-			Expect(cmd.String()).To(ContainSubstring("docker build"))
+			Expect(cmd.String()).To(ContainSubstring("docker buildx build"))
 			//secret build args envs are ignored
 			Expect(cmd.String()).ToNot(ContainSubstring("--build-arg DISCOURSE_DB_PASSWORD"))
 			Expect(cmd.String()).To(ContainSubstring("--build-arg RUBY_GC_HEAP_INIT_SLOTS"))
@@ -167,6 +167,14 @@ var _ = Describe("Build", func() {
 			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(1))
 			checkBuildCmd(RanCmds[0])
+		})
+
+		It("Should run docker build for legacy", func() {
+			runner := ddocker.DockerBuildCmd{Config: "test",  LegacyBuildkit: true}
+			runner.Run(cli, ctx) //nolint:errcheck
+			Expect(len(RanCmds)).To(Equal(1))
+			// runs docker build, not buildx build
+			Expect(RanCmds[0].String()).To(ContainSubstring("docker build "))
 		})
 
 		It("Should allow for extra build args", func() {

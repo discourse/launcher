@@ -114,7 +114,7 @@ var _ = Describe("Runtime", func() {
 
 				//initial build
 				cmd := GetLastCommand()
-				Expect(cmd.String()).To(ContainSubstring("docker build"))
+				Expect(cmd.String()).To(ContainSubstring("docker buildx build"))
 
 				//migrate, skipping post deployment migrations
 				cmd = GetLastCommand()
@@ -158,7 +158,7 @@ var _ = Describe("Runtime", func() {
 
 				//initial build
 				cmd := GetLastCommand()
-				Expect(cmd.String()).To(ContainSubstring("docker build"))
+				Expect(cmd.String()).To(ContainSubstring("docker buildx build"))
 				cmd = GetLastCommand()
 
 				// stop
