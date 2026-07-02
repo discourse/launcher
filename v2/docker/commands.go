@@ -17,11 +17,12 @@ import (
 )
 
 type DockerBuilder struct {
-	Config     *config.Config
-	Stdin      io.Reader
-	Dir        string
-	ImageTag   string
-	ExtraFlags []string
+	Config         *config.Config
+	Stdin          io.Reader
+	Dir            string
+	ImageTag       string
+	ExtraFlags     []string
+	LegacyBuildkit bool
 }
 
 func (r *DockerBuilder) Run(ctx context.Context) error {
@@ -33,13 +34,17 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 	if r.ImageTag == "" {
 		r.ImageTag = utils.DefaultNamespace + "/" + r.Config.Name
 	}
-	cmd := exec.CommandContext(ctx, utils.DockerPath, "build")
+	cmd := exec.CommandContext(ctx, utils.DockerPath)
+	if r.LegacyBuildkit {
+		cmd.Args = append(cmd.Args, "build")
+	} else {
+		cmd.Args = append(cmd.Args, "buildx", "build")
+	}
 	TimeoutDockerBuild(cmd)
 	cmd.Dir = r.Dir
 	cmd.Env = os.Environ()
 	env := r.Config.GetEnvSlice(false)
 	cmd.Env = append(cmd.Env, env...)
-	cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=plain")
 	for k := range r.Config.Env {
 		if !slices.Contains(utils.KnownSecrets, k) {
