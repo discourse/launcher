@@ -170,7 +170,7 @@ var _ = Describe("Build", func() {
 		})
 
 		It("Should run docker build for legacy", func() {
-			runner := ddocker.DockerBuildCmd{Config: "test",  LegacyBuildkit: true}
+			runner := ddocker.DockerBuildCmd{Config: "test", LegacyBuildkit: true}
 			runner.Run(cli, ctx) //nolint:errcheck
 			Expect(len(RanCmds)).To(Equal(1))
 			// runs docker build, not buildx build
