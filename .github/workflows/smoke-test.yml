@@ -94,7 +94,7 @@ jobs:
           chmod -R 777 /var/discourse/shared/standalone
       - name: Bootstrap
         working-directory: /discourse_docker
-        run: launcher2 bootstrap app
+        run: DOCKER_BUILDKIT=1 launcher2 bootstrap app
       - name: Start
         working-directory: /discourse_docker
         run: launcher2 start app
