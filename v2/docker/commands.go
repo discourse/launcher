@@ -22,7 +22,6 @@ type DockerBuilder struct {
 	Dir            string
 	ImageTag       string
 	ExtraFlags     []string
-	LegacyBuildkit bool
 }
 
 func (r *DockerBuilder) Run(ctx context.Context) error {
@@ -35,7 +34,14 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 		r.ImageTag = utils.DefaultNamespace + "/" + r.Config.Name
 	}
 	cmd := exec.CommandContext(ctx, utils.DockerPath)
-	if r.LegacyBuildkit {
+
+	// support docker buildx where available, fallback to docker build
+	testBuildxSubcommand := exec.CommandContext(ctx, utils.DockerPath, "buildx")
+	legacyBuildkit := true
+	if err := testBuildxSubcommand.Run(); err != nil {
+		legacyBuildkit = true
+	}
+	if legacyBuildkit {
 		cmd.Args = append(cmd.Args, "build")
 	} else {
 		cmd.Args = append(cmd.Args, "buildx", "build")
@@ -46,6 +52,9 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 	env := r.Config.GetEnvSlice(false)
 	cmd.Env = append(cmd.Env, env...)
 	cmd.Env = append(cmd.Env, "BUILDKIT_PROGRESS=plain")
+	if legacyBuildkit {
+		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
+	}
 	for k := range r.Config.Env {
 		if !slices.Contains(utils.KnownSecrets, k) {
 			cmd.Args = append(cmd.Args, "--build-arg")

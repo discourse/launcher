@@ -169,14 +169,6 @@ var _ = Describe("Build", func() {
 			checkBuildCmd(RanCmds[0])
 		})
 
-		It("Should run docker build for legacy", func() {
-			runner := ddocker.DockerBuildCmd{Config: "test", LegacyBuildkit: true}
-			runner.Run(cli, ctx) //nolint:errcheck
-			Expect(len(RanCmds)).To(Equal(1))
-			// runs docker build, not buildx build
-			Expect(RanCmds[0].String()).To(ContainSubstring("docker build "))
-		})
-
 		It("Should allow for extra build args", func() {
 			runner := ddocker.DockerBuildCmd{Config: "test", ExtraFlags: []string{"--platform", "linux/amd64,linux/arm64"}}
 			runner.Run(cli, ctx) //nolint:errcheck
