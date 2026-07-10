@@ -37,7 +37,7 @@ func (r *DockerBuilder) Run(ctx context.Context) error {
 
 	// support docker buildx where available, fallback to docker build
 	testBuildxSubcommand := exec.CommandContext(ctx, utils.DockerPath, "buildx")
-	legacyBuildkit := true
+	legacyBuildkit := false
 	if err := testBuildxSubcommand.Run(); err != nil {
 		legacyBuildkit = true
 	}
