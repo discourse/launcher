@@ -130,6 +130,13 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 		return nil, err
 	}
 
+	// Initialize maps for overrides if there are no values from base config
+	if config.Env == nil {
+		config.Env = map[string]string{}
+	}
+	if config.Params == nil {
+		config.Params = map[string]string{}
+	}
 	// Apply overrides
 	for key, val := range overrides {
 		// Override base image
@@ -139,20 +146,14 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 
 		// Override env
 		if strings.HasPrefix(key, "env.") {
-			envString := strings.TrimPrefix(key, "env.")
-			envKey, envVal, found := strings.Cut(envString, "=")
-			if found {
-				config.Env[envKey] = envVal
-			}
+			envKey := strings.TrimPrefix(key, "env.")
+			config.Env[envKey] = val
 		}
 
 		// Override params
 		if strings.HasPrefix(key, "param.") {
-			paramString := strings.TrimPrefix(key, "param.")
-			paramKey, paramVal, found := strings.Cut(paramString, "=")
-			if found {
-				config.Params[paramKey] = paramVal
-			}
+			paramKey := strings.TrimPrefix(key, "param.")
+			config.Params[paramKey] = val
 		}
 	}
 
@@ -170,7 +171,7 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 	// This allows pups to also get the properly replaced {{config}} values
 	// as pups does not do any replacement on its own.
 	// Appending env ensures last write wins.
-	// Also append params, as these may have been overridden from cli
+	// Also append params, and base_image as these may have been overridden from cli
 	overrideStr, err := yaml.Marshal(Config{BaseImage: config.BaseImage, Env: config.Env, Params: config.Params})
 	if err != nil {
 		return nil, err
