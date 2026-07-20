@@ -52,6 +52,7 @@ type Config struct {
 	Templates     []string          `yaml:"templates,omitempty"`
 	Expose        []string          `yaml:"expose,omitempty"`
 	Env           map[string]string `yaml:"env,omitempty"`
+	Params        map[string]string `yaml:"params,omitempty"`
 	Labels        map[string]string `yaml:"labels,omitempty"`
 	Volumes       []VolumeObject    `yaml:"volumes,omitempty"`
 	Links         []struct {
@@ -83,6 +84,9 @@ func (config *Config) loadTemplate(templateDir string, template string) error {
 }
 
 func LoadConfig(dir string, configName string, includeTemplates bool, templatesDir string) (*Config, error) {
+	return LoadConfigWithOverrides(dir, configName, includeTemplates, templatesDir, nil)
+}
+func LoadConfigWithOverrides(dir string, configName string, includeTemplates bool, templatesDir string, overrides map[string]string) (*Config, error) {
 	config := &Config{
 		Name:        configName,
 		BootCommand: defaultBootCommand,
@@ -126,6 +130,32 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 		return nil, err
 	}
 
+	// Apply overrides
+	for key, val := range overrides {
+		// Override base image
+		if key == "base_image" {
+			config.BaseImage = val
+		}
+
+		// Override env
+		if strings.HasPrefix(key, "env.") {
+			envString := strings.TrimPrefix(key, "env.")
+			envKey, envVal, found := strings.Cut(envString, "=")
+			if found {
+				config.Env[envKey] = envVal
+			}
+		}
+
+		// Override params
+		if strings.HasPrefix(key, "param.") {
+			paramString := strings.TrimPrefix(key, "param.")
+			paramKey, paramVal, found := strings.Cut(paramString, "=")
+			if found {
+				config.Params[paramKey] = paramVal
+			}
+		}
+	}
+
 	for k, v := range config.Labels {
 		val := strings.ReplaceAll(v, "{{config}}", config.Name)
 		config.Labels[k] = val
@@ -140,11 +170,12 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	// This allows pups to also get the properly replaced {{config}} values
 	// as pups does not do any replacement on its own.
 	// Appending env ensures last write wins.
-	envStr, err := yaml.Marshal(Config{Env: config.Env})
+	// Also append params, as these may have been overridden from cli
+	overrideStr, err := yaml.Marshal(Config{BaseImage: config.BaseImage, Env: config.Env, Params: config.Params})
 	if err != nil {
 		return nil, err
 	}
-	config.rawYaml = append(config.rawYaml, string(envStr))
+	config.rawYaml = append(config.rawYaml, string(overrideStr))
 
 	if config.BaseImage == "" {
 		return nil, errors.New("no base image specified in config, set base image with `base_image: {imagename}`")
