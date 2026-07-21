@@ -121,6 +121,17 @@ Run `source <(./launcher sh)` to activate completions for the current shell, or 
 
 Autocompletes commands, subcommands, and suggests `app` config files from your containers directory. Having a long site name should not feel like a pain to type.
 
+### Buildx support
+
+launcher build builds using buildx under the hood if supported. Allows for passing arbitrary docker build cli arguments, such as for `launcher build app --push`
+
+### Overrides
+
+`--set` may be used to override configuration set in app.yml.
+Supported keys are `env.*`, `param.*`, `base_image`, and `base_image_slim`.
+
+EG: `launcher build --set=env.foo=bar --set=param.b=b --set base_image=test app`
+
 ## Maintainability
 
 Launcher had outgrown being a simple wrapper script around Docker, so we rewrote it in Go.

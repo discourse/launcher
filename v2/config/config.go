@@ -143,6 +143,9 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 		if key == "base_image" {
 			config.BaseImage = val
 		}
+		if key == "base_image_slim" {
+			config.BaseImageSlim = val
+		}
 
 		// Override env
 		if strings.HasPrefix(key, "env.") {

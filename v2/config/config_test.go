@@ -212,6 +212,11 @@ COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclu
 		Expect(err).To(BeNil())
 		Expect(conf.BaseImage).To(Equal("test"))
 	})
+	It("should allow for base image slim overrides", func() {
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test", "base_image_slim": "slim_base_test"})
+		Expect(err).To(BeNil())
+		Expect(conf.BaseImageSlim).To(Equal("slim_base_test"))
+	})
 	It("should allow for env overrides", func() {
 		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test", "env.override": "true"})
 		Expect(err).To(BeNil())
