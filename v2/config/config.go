@@ -42,19 +42,19 @@ type VolumeObject struct {
 type Config struct {
 	Name          string `yaml:"-"`
 	rawYaml       []string
-	BaseImage     string            `yaml:"base_image,omitempty"`
-	BaseImageSlim string            `yaml:"base_image_slim,omitempty"`
-	UpdatePups    bool              `yaml:"update_pups,omitempty"`
-	RunImage      string            `yaml:"run_image,omitempty"`
-	BootCommand   string            `yaml:"boot_command,omitempty"`
-	NoBootCommand bool              `yaml:"no_boot_command,omitempty"`
-	DockerArgs    string            `yaml:"docker_args,omitempty"`
-	Templates     []string          `yaml:"templates,omitempty"`
-	Expose        []string          `yaml:"expose,omitempty"`
-	Env           map[string]string `yaml:"env,omitempty"`
-	Params        map[string]string `yaml:"params,omitempty"`
-	Labels        map[string]string `yaml:"labels,omitempty"`
-	Volumes       []VolumeObject    `yaml:"volumes,omitempty"`
+	BaseImage     string               `yaml:"base_image,omitempty"`
+	BaseImageSlim string               `yaml:"base_image_slim,omitempty"`
+	UpdatePups    bool                 `yaml:"update_pups,omitempty"`
+	RunImage      string               `yaml:"run_image,omitempty"`
+	BootCommand   string               `yaml:"boot_command,omitempty"`
+	NoBootCommand bool                 `yaml:"no_boot_command,omitempty"`
+	DockerArgs    string               `yaml:"docker_args,omitempty"`
+	Templates     []string             `yaml:"templates,omitempty"`
+	Expose        []string             `yaml:"expose,omitempty"`
+	Env           map[string]string    `yaml:"env,omitempty"`
+	Params        map[string]yaml.Node `yaml:"params,omitempty"`
+	Labels        map[string]string    `yaml:"labels,omitempty"`
+	Volumes       []VolumeObject       `yaml:"volumes,omitempty"`
 	Links         []struct {
 		Link struct {
 			Name  string `yaml:"name"`
@@ -135,7 +135,7 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 		config.Env = map[string]string{}
 	}
 	if config.Params == nil {
-		config.Params = map[string]string{}
+		config.Params = map[string]yaml.Node{}
 	}
 	// Apply overrides
 	for key, val := range overrides {
@@ -156,7 +156,11 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 		// Override params
 		if strings.HasPrefix(key, "param.") {
 			paramKey := strings.TrimPrefix(key, "param.")
-			config.Params[paramKey] = val
+			config.Params[paramKey] = yaml.Node{
+				Kind: yaml.ScalarNode,
+				Tag: "!!str",
+				Value: val,
+			}
 		}
 	}
 
