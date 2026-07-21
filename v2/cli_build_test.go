@@ -177,6 +177,18 @@ var _ = Describe("Build", func() {
 			Expect(RanCmds[0].String()).To(ContainSubstring("--platform linux/amd64,linux/arm64"))
 		})
 
+		It("Should allow overwritten environment variables", func() {
+			runner := ddocker.DockerBuildCmd{Config: "test", ConfigOverrides: map[string]string{"env.OVERRIDE": "true"}, BakeEnv: true}
+			runner.Run(cli, ctx) //nolint:errcheck
+			Expect(len(RanCmds)).To(Equal(1))
+			Expect(RanCmds[0].String()).To(ContainSubstring("--build-arg OVERRIDE"))
+			Expect(RanCmds[0].Env).To(ContainElement("OVERRIDE=true"))
+			buf := new(strings.Builder)
+			io.Copy(buf, RanCmds[0].Stdin) //nolint:errcheck
+			Expect(buf.String()).To(ContainSubstring("ARG OVERRIDE"))
+			Expect(buf.String()).To(ContainSubstring("OVERRIDE=${OVERRIDE}"))
+		})
+
 		It("Should run docker migrate with correct arguments", func() {
 			runner := ddocker.DockerMigrateCmd{Config: "test"}
 			runner.Run(cli, ctx) //nolint:errcheck
