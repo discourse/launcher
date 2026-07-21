@@ -1,0 +1,7 @@
+base_image: "test"
+params:
+  a: foo
+  b:
+    nested:
+      key1: value
+      key2: value2

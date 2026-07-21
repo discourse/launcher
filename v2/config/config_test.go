@@ -207,4 +207,38 @@ COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclu
 		Expect(err).To(BeNil())
 		Expect(conf.BaseImage).To(Equal("test"))
 	})
+	It("should allow for base image overrides", func() {
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test"})
+		Expect(err).To(BeNil())
+		Expect(conf.BaseImage).To(Equal("test"))
+	})
+	It("should allow for base image slim overrides", func() {
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test", "base_image_slim": "slim_base_test"})
+		Expect(err).To(BeNil())
+		Expect(conf.BaseImageSlim).To(Equal("slim_base_test"))
+	})
+	It("should allow for env overrides", func() {
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test", "env.override": "true"})
+		Expect(err).To(BeNil())
+		Expect(conf.BaseImage).To(Equal("test"))
+		Expect(conf.Env["override"]).To(Equal("true"))
+		// override value appears in env
+		Expect(conf.Yaml()).To(ContainSubstring("override: \"true\""))
+		Expect(conf.Dockerfile(true, false, "config.yaml")).To(ContainSubstring("ARG override"))
+	})
+	It("should allow for param overrides", func() {
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test", "param.override": "true"})
+		Expect(err).To(BeNil())
+		Expect(conf.BaseImage).To(Equal("test"))
+		Expect(conf.Params["override"].Value).To(Equal("true"))
+		// override value appears in params
+		Expect(conf.Yaml()).To(ContainSubstring("override: \"true\""))
+	})
+	It("should be able to load with nested param structure", func() {
+		conf, err := config.LoadConfig("../test/containers", "test-params", true, "../test")
+		Expect(err).To(BeNil())
+		result := conf.Yaml()
+		Expect(result).To(ContainSubstring("nested:"))
+		Expect(result).To(ContainSubstring("key1: value"))
+	})
 })

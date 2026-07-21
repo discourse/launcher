@@ -42,18 +42,19 @@ type VolumeObject struct {
 type Config struct {
 	Name          string `yaml:"-"`
 	rawYaml       []string
-	BaseImage     string            `yaml:"base_image,omitempty"`
-	BaseImageSlim string            `yaml:"base_image_slim,omitempty"`
-	UpdatePups    bool              `yaml:"update_pups,omitempty"`
-	RunImage      string            `yaml:"run_image,omitempty"`
-	BootCommand   string            `yaml:"boot_command,omitempty"`
-	NoBootCommand bool              `yaml:"no_boot_command,omitempty"`
-	DockerArgs    string            `yaml:"docker_args,omitempty"`
-	Templates     []string          `yaml:"templates,omitempty"`
-	Expose        []string          `yaml:"expose,omitempty"`
-	Env           map[string]string `yaml:"env,omitempty"`
-	Labels        map[string]string `yaml:"labels,omitempty"`
-	Volumes       []VolumeObject    `yaml:"volumes,omitempty"`
+	BaseImage     string               `yaml:"base_image,omitempty"`
+	BaseImageSlim string               `yaml:"base_image_slim,omitempty"`
+	UpdatePups    bool                 `yaml:"update_pups,omitempty"`
+	RunImage      string               `yaml:"run_image,omitempty"`
+	BootCommand   string               `yaml:"boot_command,omitempty"`
+	NoBootCommand bool                 `yaml:"no_boot_command,omitempty"`
+	DockerArgs    string               `yaml:"docker_args,omitempty"`
+	Templates     []string             `yaml:"templates,omitempty"`
+	Expose        []string             `yaml:"expose,omitempty"`
+	Env           map[string]string    `yaml:"env,omitempty"`
+	Params        map[string]yaml.Node `yaml:"params,omitempty"`
+	Labels        map[string]string    `yaml:"labels,omitempty"`
+	Volumes       []VolumeObject       `yaml:"volumes,omitempty"`
 	Links         []struct {
 		Link struct {
 			Name  string `yaml:"name"`
@@ -83,6 +84,9 @@ func (config *Config) loadTemplate(templateDir string, template string) error {
 }
 
 func LoadConfig(dir string, configName string, includeTemplates bool, templatesDir string) (*Config, error) {
+	return LoadConfigWithOverrides(dir, configName, includeTemplates, templatesDir, nil)
+}
+func LoadConfigWithOverrides(dir string, configName string, includeTemplates bool, templatesDir string, overrides map[string]string) (*Config, error) {
 	config := &Config{
 		Name:        configName,
 		BootCommand: defaultBootCommand,
@@ -126,6 +130,40 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 		return nil, err
 	}
 
+	// Initialize maps for overrides if there are no values from base config
+	if config.Env == nil {
+		config.Env = map[string]string{}
+	}
+	if config.Params == nil {
+		config.Params = map[string]yaml.Node{}
+	}
+	// Apply overrides
+	for key, val := range overrides {
+		// Override base image
+		if key == "base_image" {
+			config.BaseImage = val
+		}
+		if key == "base_image_slim" {
+			config.BaseImageSlim = val
+		}
+
+		// Override env
+		if strings.HasPrefix(key, "env.") {
+			envKey := strings.TrimPrefix(key, "env.")
+			config.Env[envKey] = val
+		}
+
+		// Override params
+		if strings.HasPrefix(key, "param.") {
+			paramKey := strings.TrimPrefix(key, "param.")
+			config.Params[paramKey] = yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Tag:   "!!str",
+				Value: val,
+			}
+		}
+	}
+
 	for k, v := range config.Labels {
 		val := strings.ReplaceAll(v, "{{config}}", config.Name)
 		config.Labels[k] = val
@@ -140,11 +178,12 @@ func LoadConfig(dir string, configName string, includeTemplates bool, templatesD
 	// This allows pups to also get the properly replaced {{config}} values
 	// as pups does not do any replacement on its own.
 	// Appending env ensures last write wins.
-	envStr, err := yaml.Marshal(Config{Env: config.Env})
+	// Also append params, and base_image as these may have been overridden from cli
+	overrideStr, err := yaml.Marshal(Config{BaseImage: config.BaseImage, Env: config.Env, Params: config.Params})
 	if err != nil {
 		return nil, err
 	}
-	config.rawYaml = append(config.rawYaml, string(envStr))
+	config.rawYaml = append(config.rawYaml, string(overrideStr))
 
 	if config.BaseImage == "" {
 		return nil, errors.New("no base image specified in config, set base image with `base_image: {imagename}`")

@@ -19,15 +19,16 @@ import (
  * bootstrap
  */
 type DockerBuildCmd struct {
-	BakeEnv    bool     `short:"e" help:"Bake in the configured environment to image after build."`
-	BuildSlim  bool     `hidden:"" help:"Build a minimal image from a multistage build"`
-	Tag        string   `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	Config     string   `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
-	ExtraFlags []string `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
+	BakeEnv         bool              `short:"e" help:"Bake in the configured environment to image after build."`
+	BuildSlim       bool              `hidden:"" help:"Build a minimal image from a multistage build"`
+	Tag             string            `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	Config          string            `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
+	ExtraFlags      []string          `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
 }
 
 func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
-	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
+	config, err := config.LoadConfigWithOverrides(cli.ConfDir, r.Config, true, cli.TemplatesDir, r.ConfigOverrides)
 	if err != nil {
 		return err
 	}
@@ -61,14 +62,15 @@ func (r *DockerBuildCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerConfigureCmd struct {
-	SourceTag    string `short:"s" help:"Source image tag to build from. Defaults to 'local_discourse/{config}'"`
-	TargetTag    string `short:"t" name:"tag" help:"Target image tag to save as. Defaults to 'local_discourse/{config}'"`
-	UseBaseImage bool   `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
-	Config       string `arg:"" name:"config" help:"config" predictor:"config"`
+	SourceTag       string            `short:"s" help:"Source image tag to build from. Defaults to 'local_discourse/{config}'"`
+	TargetTag       string            `short:"t" name:"tag" help:"Target image tag to save as. Defaults to 'local_discourse/{config}'"`
+	UseBaseImage    bool              `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
+	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	Config          string            `arg:"" name:"config" help:"config" predictor:"config"`
 }
 
 func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
-	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
+	config, err := config.LoadConfigWithOverrides(cli.ConfDir, r.Config, true, cli.TemplatesDir, r.ConfigOverrides)
 
 	if err != nil {
 		return err
@@ -108,14 +110,15 @@ func (r *DockerConfigureCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerMigrateCmd struct {
-	Tag                          string `help:"Image to migrate. Defaults to 'local_discourse/{config}'"`
-	SkipPostDeploymentMigrations bool   `env:"SKIP_POST_DEPLOYMENT_MIGRATIONS" help:"Skip post-deployment migrations. Runs safe migrations only. Defers breaking-change migrations. Make sure you run post-deployment migrations after a full deploy is complete if you use this option."`
-	UseBaseImage                 bool   `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
-	Config                       string `arg:"" name:"config" help:"config" predictor:"config"`
+	Tag                          string            `help:"Image to migrate. Defaults to 'local_discourse/{config}'"`
+	SkipPostDeploymentMigrations bool              `env:"SKIP_POST_DEPLOYMENT_MIGRATIONS" help:"Skip post-deployment migrations. Runs safe migrations only. Defers breaking-change migrations. Make sure you run post-deployment migrations after a full deploy is complete if you use this option."`
+	UseBaseImage                 bool              `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
+	ConfigOverrides              map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	Config                       string            `arg:"" name:"config" help:"config" predictor:"config"`
 }
 
 func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
-	config, err := config.LoadConfig(cli.ConfDir, r.Config, true, cli.TemplatesDir)
+	config, err := config.LoadConfigWithOverrides(cli.ConfDir, r.Config, true, cli.TemplatesDir, r.ConfigOverrides)
 	if err != nil {
 		return err
 	}
@@ -143,9 +146,10 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 }
 
 type DockerBootstrapCmd struct {
-	Config    string `arg:"" name:"config" help:"config" predictor:"config"`
-	Tag       string `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	BuildSlim bool   `hidden:"" help:"Build a minimal image from a multistage build"`
+	Config          string            `arg:"" name:"config" help:"config" predictor:"config"`
+	Tag             string            `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
+	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	BuildSlim       bool              `hidden:"" help:"Build a minimal image from a multistage build"`
 }
 
 func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
@@ -153,9 +157,9 @@ func (r *DockerBootstrapCmd) Run(cli *Cli, ctx context.Context) error {
 	if len(r.Tag) > 0 {
 		tag = r.Tag
 	}
-	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, Tag: tag, BuildSlim: r.BuildSlim}
-	migrateStep := DockerMigrateCmd{Config: r.Config, Tag: tag}
-	configureStep := DockerConfigureCmd{Config: r.Config, SourceTag: tag, TargetTag: tag}
+	buildStep := DockerBuildCmd{Config: r.Config, BakeEnv: false, Tag: tag, BuildSlim: r.BuildSlim, ConfigOverrides: r.ConfigOverrides}
+	migrateStep := DockerMigrateCmd{Config: r.Config, Tag: tag, ConfigOverrides: r.ConfigOverrides}
+	configureStep := DockerConfigureCmd{Config: r.Config, SourceTag: tag, TargetTag: tag, ConfigOverrides: r.ConfigOverrides}
 	if err := buildStep.Run(cli, ctx); err != nil {
 		return err
 	}
