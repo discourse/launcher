@@ -157,8 +157,8 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 		if strings.HasPrefix(key, "param.") {
 			paramKey := strings.TrimPrefix(key, "param.")
 			config.Params[paramKey] = yaml.Node{
-				Kind: yaml.ScalarNode,
-				Tag: "!!str",
+				Kind:  yaml.ScalarNode,
+				Tag:   "!!str",
 				Value: val,
 			}
 		}
