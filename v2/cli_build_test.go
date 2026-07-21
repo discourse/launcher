@@ -316,5 +316,23 @@ var _ = Describe("Build", func() {
 			checkConfigureCommit(RanCmds[3])
 			checkConfigureClean(RanCmds[4])
 		})
+
+		It("Should allow overrides on full bootstrap", func() {
+			runner := ddocker.DockerBootstrapCmd{Config: "test", ConfigOverrides: map[string]string{"env.OVERRIDE": "true"}}
+			runner.Run(cli, ctx) //nolint:errcheck
+			Expect(len(RanCmds)).To(Equal(5))
+			Expect(RanCmds[0].String()).To(ContainSubstring("--build-arg OVERRIDE"))
+			Expect(RanCmds[0].Env).To(ContainElement("OVERRIDE=true"))
+			buf := new(strings.Builder)
+			io.Copy(buf, RanCmds[0].Stdin) //nolint:errcheck
+			Expect(buf.String()).To(ContainSubstring("ARG OVERRIDE"))
+			checkMigrateCmd(RanCmds[1], "local_discourse/test")
+			Expect(RanCmds[1].String()).To(ContainSubstring("--env OVERRIDE"))
+			Expect(RanCmds[1].Env).To(ContainElement("OVERRIDE=true"))
+			Expect(RanCmds[2].String()).To(ContainSubstring("--env OVERRIDE"))
+			Expect(RanCmds[2].Env).To(ContainElement("OVERRIDE=true"))
+			checkConfigureCommit(RanCmds[3])
+			checkConfigureClean(RanCmds[4])
+		})
 	})
 })
