@@ -234,6 +234,38 @@ COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclu
 		// override value appears in params
 		Expect(conf.Yaml()).To(ContainSubstring("override: \"true\""))
 	})
+	It("renders the resolved config as a single yaml document", func() {
+		out, err := conf.ResolvedYaml()
+		Expect(err).To(BeNil())
+		Expect(out).To(ContainSubstring("base_image: discourse/base:2.0.20250226-0128"))
+		// merged from a template
+		Expect(out).To(ContainSubstring("version: tests-passed"))
+		// {{config}} substitution is applied
+		Expect(out).To(ContainSubstring("REPLACED: test/test/test"))
+		// unlike Yaml(), there is no pups file separator
+		Expect(out).ToNot(ContainSubstring("_FILE_SEPERATOR_"))
+	})
+	It("renders a template against the resolved config using yaml keys", func() {
+		out, err := conf.Render("{{.base_image}}")
+		Expect(err).To(BeNil())
+		Expect(out).To(Equal("discourse/base:2.0.20250226-0128"))
+	})
+	It("resolves templated values in a rendered template", func() {
+		out, err := conf.Render("{{.env.UNICORN_WORKERS}}/{{.env.REPLACED}}")
+		Expect(err).To(BeNil())
+		Expect(out).To(Equal("3/test/test/test"))
+	})
+	It("reflects overrides in a rendered template", func() {
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test", true, "../test", map[string]string{"base_image": "my/override:1"})
+		Expect(err).To(BeNil())
+		out, err := conf.Render("{{.base_image}}")
+		Expect(err).To(BeNil())
+		Expect(out).To(Equal("my/override:1"))
+	})
+	It("errors when a template references an unknown key", func() {
+		_, err := conf.Render("{{.does_not_exist}}")
+		Expect(err).ToNot(BeNil())
+	})
 	It("should be able to load with nested param structure", func() {
 		conf, err := config.LoadConfig("../test/containers", "test-params", true, "../test")
 		Expect(err).To(BeNil())

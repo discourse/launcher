@@ -23,6 +23,7 @@ type Cli struct {
 	ConfigureCmd DockerConfigureCmd `cmd:"" name:"configure" help:"Configure and save an image with all dependencies and environment baked in. Updates themes and precompiles all assets. Saves resulting container."`
 	MigrateCmd   DockerMigrateCmd   `cmd:"" name:"migrate" help:"Run migration tasks for a site. Running container is temporary and is not saved."`
 	BootstrapCmd DockerBootstrapCmd `cmd:"" name:"bootstrap" help:"Builds, migrates, and configures an image. Resulting image is a fully built and configured Discourse image."`
+	ResolveCmd   ResolveCmd         `cmd:"" name:"resolve" help:"Print the resolved config (base config merged with templates and overrides), or render a Go template against it."`
 
 	DestroyCmd DestroyCmd `cmd:"" name:"destroy" aliases:"down,rm" help:"Shutdown and destroy container."`
 	LogsCmd    LogsCmd    `cmd:"" name:"logs" help:"Print logs for container."`

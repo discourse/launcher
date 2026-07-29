@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"text/template"
 
 	"dario.cat/mergo"
 	"github.com/discourse/launcher/v2/utils"
@@ -210,6 +211,48 @@ func (config *Config) ValidateConfig(parentError error) error {
 
 func (config *Config) Yaml() string {
 	return strings.Join(config.rawYaml, "_FILE_SEPERATOR_")
+}
+
+// ResolvedYaml renders the fully merged config (base config + templates +
+// overrides) as a single YAML document, keyed by the config's yaml field names.
+func (config *Config) ResolvedYaml() (string, error) {
+	out, err := yaml.Marshal(config)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
+// ResolvedMap returns the resolved config as a generic map keyed by yaml field
+// names, suitable for feeding to a text/template.
+func (config *Config) ResolvedMap() (map[string]any, error) {
+	out, err := yaml.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	resolved := map[string]any{}
+	if err := yaml.Unmarshal(out, &resolved); err != nil {
+		return nil, err
+	}
+	return resolved, nil
+}
+
+// Render executes a Go text/template against the resolved config. Templates
+// reference yaml field names, eg '{{.base_image}}' or '{{.env.RAILS_ENV}}'.
+func (config *Config) Render(templateText string) (string, error) {
+	resolved, err := config.ResolvedMap()
+	if err != nil {
+		return "", err
+	}
+	tmpl, err := template.New("resolve").Option("missingkey=error").Parse(templateText)
+	if err != nil {
+		return "", err
+	}
+	builder := strings.Builder{}
+	if err := tmpl.Execute(&builder, resolved); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
 }
 
 func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string) string {

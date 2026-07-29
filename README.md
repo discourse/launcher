@@ -132,6 +132,21 @@ Supported keys are `env.*`, `param.*`, `base_image`, and `base_image_slim`.
 
 EG: `launcher build --set=env.foo=bar --set=param.b=b --set base_image=test app`
 
+### Resolving config
+
+`launcher resolve app` prints the resolved config: the app config merged with its `templates`, with `--set` overrides and `{{config}}` substitution applied. This is the same resolution every other command performs on load, so it reflects the config that `build`, `migrate`, `configure`, `bootstrap`, and the runtime commands actually run with.
+
+With no template it prints the full resolved config as a single YAML document. Pass `--template`/`-T` to render a Go [text/template](https://pkg.go.dev/text/template) against it, referencing yaml keys:
+
+```
+launcher resolve app                              # full resolved YAML
+launcher resolve app -T '{{.base_image}}'         # just the resolved base image
+launcher resolve app -T '{{.env.RAILS_ENV}}'
+launcher resolve app -T '{{.base_image}}' --set base_image=my/image:1
+```
+
+`--template-file` reads the template from a file instead. Referencing a key that isn't present is an error, so typos surface immediately. `--set` is supported exactly as in `build`.
+
 ## Maintainability
 
 Launcher had outgrown being a simple wrapper script around Docker, so we rewrote it in Go.
