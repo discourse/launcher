@@ -174,12 +174,20 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 		config.Env[k] = val
 	}
 
+	// Replace string params in base image and base image slim
+	for k, v := range config.Params {
+		if v.Tag == "!!str" {
+			config.BaseImage = strings.ReplaceAll(config.BaseImage, "{{"+k+"}}", v.Value)
+			config.BaseImageSlim = strings.ReplaceAll(config.BaseImageSlim, "{{"+k+"}}", v.Value)
+		}
+	}
+
 	// Append env to final raw yaml to replace {{config}} entries
 	// This allows pups to also get the properly replaced {{config}} values
 	// as pups does not do any replacement on its own.
 	// Appending env ensures last write wins.
 	// Also append params, and base_image as these may have been overridden from cli
-	overrideStr, err := yaml.Marshal(Config{BaseImage: config.BaseImage, Env: config.Env, Params: config.Params})
+	overrideStr, err := yaml.Marshal(Config{BaseImage: config.BaseImage, BaseImageSlim: config.BaseImageSlim, Env: config.Env, Params: config.Params})
 	if err != nil {
 		return nil, err
 	}
