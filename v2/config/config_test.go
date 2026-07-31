@@ -241,4 +241,10 @@ COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclu
 		Expect(result).To(ContainSubstring("nested:"))
 		Expect(result).To(ContainSubstring("key1: value"))
 	})
+	It("should be able to replace base image settings with params", func() {
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-params-replacement", true, "../test", map[string]string{"param.override": "override"})
+		Expect(err).To(BeNil())
+		Expect(conf.BaseImage).To(Equal("test-foo-override"))
+		Expect(conf.BaseImageSlim).To(Equal("test-foo-{{b}}"))
+	})
 })
