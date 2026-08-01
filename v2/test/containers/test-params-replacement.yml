@@ -1,7 +1,9 @@
-base_image: "test-{{a}}-{{override}}"
+base_image: "test-{{a}}-{{override}}-{{c}}-{{d}}"
 base_image_slim: "test-{{a}}-{{b}}"
 params:
   a: foo
+  c: 1
+  d: 1.1
   b:
     nested:
       key1: value

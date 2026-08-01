@@ -176,7 +176,7 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 
 	// Replace string params in base image and base image slim
 	for k, v := range config.Params {
-		if v.Tag == "!!str" {
+		if v.Tag == "!!str" || v.Tag == "!!int" || v.Tag == "!!float" {
 			config.BaseImage = strings.ReplaceAll(config.BaseImage, "{{"+k+"}}", v.Value)
 			config.BaseImageSlim = strings.ReplaceAll(config.BaseImageSlim, "{{"+k+"}}", v.Value)
 		}

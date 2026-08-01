@@ -244,7 +244,7 @@ COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclu
 	It("should be able to replace base image settings with params", func() {
 		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-params-replacement", true, "../test", map[string]string{"param.override": "override"})
 		Expect(err).To(BeNil())
-		Expect(conf.BaseImage).To(Equal("test-foo-override"))
+		Expect(conf.BaseImage).To(Equal("test-foo-override-1-1.1"))
 		Expect(conf.BaseImageSlim).To(Equal("test-foo-{{b}}"))
 	})
 })
