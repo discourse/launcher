@@ -22,7 +22,7 @@ type DockerBuildCmd struct {
 	BakeEnv         bool              `short:"e" help:"Bake in the configured environment to image after build."`
 	BuildSlim       bool              `hidden:"" help:"Build a minimal image from a multistage build"`
 	Tag             string            `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=params.baz=value --set=base_image=override"`
 	Config          string            `arg:"" name:"config" help:"configuration" predictor:"config" passthrough:""`
 	ExtraFlags      []string          `arg:"" optional:"" name:"docker-build-flags" help:"Extra build flags for docker build"`
 }
@@ -65,7 +65,7 @@ type DockerConfigureCmd struct {
 	SourceTag       string            `short:"s" help:"Source image tag to build from. Defaults to 'local_discourse/{config}'"`
 	TargetTag       string            `short:"t" name:"tag" help:"Target image tag to save as. Defaults to 'local_discourse/{config}'"`
 	UseBaseImage    bool              `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
-	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=params.baz=value --set=base_image=override"`
 	Config          string            `arg:"" name:"config" help:"config" predictor:"config"`
 }
 
@@ -113,7 +113,7 @@ type DockerMigrateCmd struct {
 	Tag                          string            `help:"Image to migrate. Defaults to 'local_discourse/{config}'"`
 	SkipPostDeploymentMigrations bool              `env:"SKIP_POST_DEPLOYMENT_MIGRATIONS" help:"Skip post-deployment migrations. Runs safe migrations only. Defers breaking-change migrations. Make sure you run post-deployment migrations after a full deploy is complete if you use this option."`
 	UseBaseImage                 bool              `env:"LAUNCHER_USE_BASE_IMAGE" help:"use base image as the tag."`
-	ConfigOverrides              map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	ConfigOverrides              map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=params.baz=value --set=base_image=override"`
 	Config                       string            `arg:"" name:"config" help:"config" predictor:"config"`
 }
 
@@ -148,7 +148,7 @@ func (r *DockerMigrateCmd) Run(cli *Cli, ctx context.Context) error {
 type DockerBootstrapCmd struct {
 	Config          string            `arg:"" name:"config" help:"config" predictor:"config"`
 	Tag             string            `short:"t" help:"Resulting image tag. Defaults to 'local_discourse/{config}'"`
-	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=param.baz=value --set=base-image=override"`
+	ConfigOverrides map[string]string `name:"set" help:"Extra config to override values, can override env, params, and base image --set=env.foo=val --set=env.bar=value --set=params.baz=value --set=base_image=override"`
 	BuildSlim       bool              `hidden:"" help:"Build a minimal image from a multistage build"`
 }
 

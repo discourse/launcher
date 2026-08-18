@@ -227,7 +227,7 @@ COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclu
 		Expect(conf.Dockerfile(true, false, "config.yaml")).To(ContainSubstring("ARG override"))
 	})
 	It("should allow for param overrides", func() {
-		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test", "param.override": "true"})
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-no-base-image", true, "../test", map[string]string{"base_image": "test", "params.override": "true"})
 		Expect(err).To(BeNil())
 		Expect(conf.BaseImage).To(Equal("test"))
 		Expect(conf.Params["override"].Value).To(Equal("true"))
@@ -241,8 +241,12 @@ COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclu
 		Expect(result).To(ContainSubstring("nested:"))
 		Expect(result).To(ContainSubstring("key1: value"))
 	})
+	It("should error on unrecognized override keys", func() {
+		_, err := config.LoadConfigWithOverrides("../test/containers", "test-params-replacement", true, "../test", map[string]string{"param.override": "override"})
+		Expect(err).To(MatchError(ContainSubstring("unrecognized override 'param.override'")))
+	})
 	It("should be able to replace base image settings with params", func() {
-		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-params-replacement", true, "../test", map[string]string{"param.override": "override"})
+		conf, err := config.LoadConfigWithOverrides("../test/containers", "test-params-replacement", true, "../test", map[string]string{"params.override": "override"})
 		Expect(err).To(BeNil())
 		Expect(conf.BaseImage).To(Equal("test-foo-override-1-1.1"))
 		Expect(conf.BaseImageSlim).To(Equal("test-foo-{{b}}"))
