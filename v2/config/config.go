@@ -139,28 +139,23 @@ func LoadConfigWithOverrides(dir string, configName string, includeTemplates boo
 	}
 	// Apply overrides
 	for key, val := range overrides {
-		// Override base image
-		if key == "base_image" {
+		switch {
+		case key == "base_image":
 			config.BaseImage = val
-		}
-		if key == "base_image_slim" {
+		case key == "base_image_slim":
 			config.BaseImageSlim = val
-		}
-
-		// Override env
-		if strings.HasPrefix(key, "env.") {
+		case strings.HasPrefix(key, "env."):
 			envKey := strings.TrimPrefix(key, "env.")
 			config.Env[envKey] = val
-		}
-
-		// Override params
-		if strings.HasPrefix(key, "param.") {
-			paramKey := strings.TrimPrefix(key, "param.")
+		case strings.HasPrefix(key, "params."):
+			paramKey := strings.TrimPrefix(key, "params.")
 			config.Params[paramKey] = yaml.Node{
 				Kind:  yaml.ScalarNode,
 				Tag:   "!!str",
 				Value: val,
 			}
+		default:
+			return nil, errors.New("unrecognized override '" + key + "': expected base_image, base_image_slim, env.{key}, or params.{key}")
 		}
 	}
 
