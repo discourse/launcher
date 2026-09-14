@@ -255,7 +255,7 @@ func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string
 		}
 		builder.WriteString(config.dockerfileExpose() + "\n")
 		// copy full build
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp/cache --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse\n")
+		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse\n")
 		// copy pnpm lock, used for calculating asset processor and pretty text processor
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
 		//copy runtime-dependent node_modules
