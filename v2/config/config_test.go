@@ -173,7 +173,7 @@ ENV RAILS_ENV=${RAILS_ENV} \
 EXPOSE 443
 EXPOSE 80
 EXPOSE 90
-COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp/cache --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse`))
+COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse`))
 	})
 
 	Context("hostname tests", func() {
