@@ -174,6 +174,8 @@ EXPOSE 443
 EXPOSE 80
 EXPOSE 90
 COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=tmp --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse`))
+		Expect(dockerfile).To(ContainSubstring("frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.cjs.js"))
+		Expect(dockerfile).ToNot(ContainSubstring("frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.js"))
 	})
 
 	Context("hostname tests", func() {
