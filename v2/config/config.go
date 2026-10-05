@@ -259,7 +259,6 @@ func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string
 		// copy pnpm lock, used for calculating asset processor and pretty text processor
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
 		//copy runtime-dependent node_modules
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js /var/www/discourse/frontend/discourse/node_modules/loader.js/dist/loader/loader.js\n")
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.cjs.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.cjs.js\n")
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js\n")
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/moment.js /var/www/discourse/frontend/discourse/node_modules/moment/moment.js\n")
