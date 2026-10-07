@@ -256,16 +256,6 @@ func (config *Config) Dockerfile(bakeEnv bool, buildSlim bool, configFile string
 		builder.WriteString(config.dockerfileExpose() + "\n")
 		// copy full build
 		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder --exclude=.git --exclude=**/node_modules --exclude=**/libv8_monolith.a /var/www/discourse/ /var/www/discourse\n")
-		// copy pnpm lock, used for calculating asset processor and pretty text processor
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/.pnpm/lock.yaml /var/www/discourse/node_modules/.pnpm/lock.yaml\n")
-		//copy runtime-dependent node_modules
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.cjs.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/markdown-it/dist/markdown-it.cjs.js\n")
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js /var/www/discourse/frontend/discourse-markdown-it/node_modules/xss/dist/xss.js\n")
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/moment.js /var/www/discourse/frontend/discourse/node_modules/moment/moment.js\n")
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js /var/www/discourse/frontend/discourse/node_modules/moment-timezone/builds/moment-timezone-with-data.js\n")
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/ /var/www/discourse/frontend/discourse/node_modules/@highlightjs/cdn-assets/\n")
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales /var/www/discourse/node_modules/@discourse/moment-timezone-names-translations/locales\n")
-		builder.WriteString("COPY --chown=discourse:discourse --from=discourse-builder /var/www/discourse/frontend/discourse/node_modules/moment/locale /var/www/discourse/frontend/discourse/node_modules/moment/locale\n")
 		builder.WriteString("RUN --mount=type=bind,source=" + configFile + ",target=/temp-config.yaml ")
 		builder.WriteString(
 			"cat /temp-config.yaml | /usr/local/bin/pups --skip-tags=build,precompile,migrate,db --stdin\n")
